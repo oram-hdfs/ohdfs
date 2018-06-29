@@ -1,0 +1,94 @@
+<!---
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License. See accompanying LICENSE file.
+-->
+
+Apache Hadoop ${project.version}
+================================
+
+Apache Hadoop ${project.version} is a minor release in the 2.x.y release
+line, building upon the previous stable release 2.7.3.
+
+Here is a short overview of the major features and improvements.
+
+*   Common
+
+    *   Support async call retry and failover which can be used in async DFS
+        implementation with retry effort.
+
+    *   Cross Frame Scripting (XFS) prevention for UIs can be provided through
+        a common servlet filter.
+
+    *   S3A improvements: add ability to plug in any AWSCredentialsProvider,
+        support read s3a credentials from hadoop credential provider API in
+        addition to XML configuraiton files, support Amazon STS temporary
+        credentials
+
+    *   WASB improvements: adding append API support
+
+    *   Build enhancements: replace dev-support with wrappers to Yetus,
+        provide a docker based solution to setup a build environment,
+        remove CHANGES.txt and rework the change log and release notes.
+
+    *   Add posixGroups support for LDAP groups mapping service.
+
+*   HDFS
+
+    *   WebHDFS enhancements: integrate CSRF prevention filter in WebHDFS,
+        support OAuth2 in WebHDFS, disallow/allow snapshots via WebHDFS
+
+    *   Allow long-running Balancer to login with keytab
+
+    *   Add ReverseXML processor which reconstructs an fsimage from an XML file.
+        This will make it easy to create fsimages for testing, and manually edit
+        fsimages when there is corruption
+
+    *   Support nested encryption zones
+
+    *   DataNode Lifeline Protocol: an alternative protocol for reporting DataNode
+        liveness. This can prevent the NameNode from incorrectly marking DataNodes
+        as stale or dead in highly overloaded clusters where heartbeat processing
+        is suffering delays.
+
+    *   Logging HDFS operation's caller context into audit logs
+
+    *   A new Datanode command for evicting writers which is useful when data node
+        decommissioning is blocked by slow writers.
+
+*   YARN
+
+    *   NodeManager CPU resource monitoring in Windows.
+
+    *   NM shutdown more graceful: NM will unregister to RM immediately rather than
+        waiting for timeout to be LOST (if NM work preserving is not enabled).
+
+    *   Add ability to fail a specific AM attempt in scenario of AM attempt get stuck.
+
+    *   CallerContext support in YARN audit log.
+
+    *   ATS versioning support: a new configuration to indicate timeline service version.
+
+*   MAPREDUCE
+
+    *   Allow node labels get specified in submitting MR jobs
+
+    *   Add a new tool to combine aggregated logs into HAR files
+
+Getting Started
+===============
+
+The Hadoop documentation includes the information you need to get started using
+Hadoop. Begin with the
+[Single Node Setup](./hadoop-project-dist/hadoop-common/SingleCluster.html) which
+shows you how to set up a single-node Hadoop installation. Then move on to the
+[Cluster Setup](./hadoop-project-dist/hadoop-common/ClusterSetup.html) to learn how
+to set up a multi-node Hadoop installation.

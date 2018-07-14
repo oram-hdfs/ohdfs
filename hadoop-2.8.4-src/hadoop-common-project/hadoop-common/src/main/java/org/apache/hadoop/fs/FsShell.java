@@ -63,7 +63,7 @@ public class FsShell extends Configured implements Tool {
    * Default ctor with no configuration.  Be sure to invoke
    * {@link #setConf(Configuration)} with a valid configuration prior
    * to running commands.
-   */
+   */   
   public FsShell() {
     this(null);
   }
@@ -92,9 +92,12 @@ public class FsShell extends Configured implements Tool {
   }
   
   protected void init() throws IOException {
+	System.out.println("init() was doing by kangyucheng");
     getConf().setQuietMode(true);
     UserGroupInformation.setConfiguration(getConf());
+    System.out.println(" config() by kangyucheng");
     if (commandFactory == null) {
+    	System.out.println("cmd reggister was doing by kangyucheng");
       commandFactory = new CommandFactory(getConf());
       commandFactory.addObject(new Help(), "-help");
       commandFactory.addObject(new Usage(), "-usage");
@@ -299,8 +302,10 @@ public class FsShell extends Configured implements Tool {
       printUsage(System.err);
     } else {
       String cmd = argv[0];
+      System.out.println(cmd+"cmd was find by kangyucheng");
       Command instance = null;
       try {
+    	System.out.println("kangyucheng has find the entry of command Factory");
         instance = commandFactory.getInstance(cmd);
         if (instance == null) {
           throw new UnknownCommandException();
@@ -314,6 +319,7 @@ public class FsShell extends Configured implements Tool {
           scope.getSpan().addKVAnnotation("args", args);
         }
         try {
+          System.out.println("kangyucheng stare to execute cmd ");
           exitCode = instance.run(Arrays.copyOfRange(argv, 1, argv.length));
         } finally {
           scope.close();
@@ -371,6 +377,7 @@ public class FsShell extends Configured implements Tool {
    * @throws Exception upon error
    */
   public static void main(String argv[]) throws Exception {
+	System.out.println("kangyucheng has find the entry of shell");
     FsShell shell = newShellInstance();
     Configuration conf = new Configuration();
     conf.setQuietMode(false);

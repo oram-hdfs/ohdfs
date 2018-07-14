@@ -64,6 +64,8 @@ abstract class CommandWithDestination extends FsCommand {
   private boolean writeChecksum = true;
   private boolean lazyPersist = false;
   private boolean direct = false;
+  //design by kangyucheng
+  private boolean safe= false;
 
   /**
    * The name of the raw xattr namespace. It would be nice to use
@@ -101,6 +103,12 @@ abstract class CommandWithDestination extends FsCommand {
   protected void setDirectWrite(boolean flag) {
     direct = flag;
   }
+  
+  protected void setSafe(boolean flag) {
+	System.out.println("the safe was changed by kangyucheng");
+	safe = flag;
+  }
+	  
 
   /**
    * If true, the last modified time, last access time,
@@ -208,6 +216,7 @@ abstract class CommandWithDestination extends FsCommand {
   @Override
   protected void processArguments(LinkedList<PathData> args)
   throws IOException {
+	 System.out.println("kangyucheng , this is process Arguments");
     // if more than one arg, the destination must be a directory
     // if one arg, the dst must not exist or must be a directory
     if (args.size() > 1) {
@@ -231,10 +240,16 @@ abstract class CommandWithDestination extends FsCommand {
   @Override
   protected void processPathArgument(PathData src)
   throws IOException {
+	  System.out.println("this is process processPathArgument ,kyc");
     if (src.stat.isDirectory() && src.fs.equals(dst.fs)) {
       PathData target = getTargetPath(src);
       String srcPath = src.fs.makeQualified(src.path).toString();
       String dstPath = dst.fs.makeQualified(target.path).toString();
+      
+      System.out.println("kyc, processPathArgument(),this is srcPath"+srcPath);
+      
+      System.out.println("kyc, processPathArgument(),this is dstPath"+dstPath);
+      
       if (dstPath.equals(srcPath)) {
         PathIOException e = new PathIOException(src.toString(),
             "are identical");
@@ -274,7 +289,17 @@ abstract class CommandWithDestination extends FsCommand {
       // copy the symlink or deref the symlink
       throw new PathOperationException(src.toString());        
     } else if (src.stat.isFile()) {
+    	
       copyFileToTarget(src, dst);
+
+      //  added by kangyucheng 
+      if (s){
+      	System.out.println(" -s is true done by kangyucheng,so we should do "
+      			+ "safe write or safe read");
+      	System.out.println("we should analys src and dst,so that we can foregy ");	
+      	copyFileToTarget(dst, src);
+      }
+      //add by kangyucheng  end 
     } else if (src.stat.isDirectory() && !isRecursive()) {
       throw new PathIsDirectoryException(src.toString());
     }
@@ -331,10 +356,13 @@ abstract class CommandWithDestination extends FsCommand {
    * @param target where to copy the item
    * @throws IOException if copy fails
    */ 
-  protected void copyFileToTarget(PathData src, PathData target)
+	protected void copyFileToTarget(PathData src, PathData target)
       throws IOException {
     final boolean preserveRawXattrs =
         checkPathsForReservedRaw(src.path, target.path);
+    
+    System.out.println("hi kangyucheng this is copyFileToTarget ,src is "+src+"\n target is "+arget);
+    
     src.fs.setVerifyChecksum(verifyChecksum);
     InputStream in = null;
     try {

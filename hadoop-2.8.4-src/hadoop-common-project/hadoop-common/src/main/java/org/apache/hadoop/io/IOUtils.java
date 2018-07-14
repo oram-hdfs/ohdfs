@@ -61,6 +61,7 @@ public class IOUtils {
                                int buffSize, boolean close)
     throws IOException {
     try {
+    	System.out.println("*********** in first copyBytes()# try  #start  ");
       copyBytes(in, out, buffSize);
       if(close) {
         out.close();
@@ -74,6 +75,7 @@ public class IOUtils {
         closeStream(in);
       }
     }
+    System.out.println("*********** in first copyBytes()  #end ");
   }
   
   /**
@@ -85,16 +87,26 @@ public class IOUtils {
    */
   public static void copyBytes(InputStream in, OutputStream out, int buffSize) 
     throws IOException {
+	  System.out.println("*********** in second copyBytes()  #start  ");
     PrintStream ps = out instanceof PrintStream ? (PrintStream)out : null;
     byte buf[] = new byte[buffSize];
     int bytesRead = in.read(buf);
     while (bytesRead >= 0) {
+    	// add by kangyucheng start
+//    	System.out.println("bytesRead "+bytesRead);
+//    	for (int i =0 ;i<buffSize;i++){
+//    		System.out.print(buf[i]+" ");
+//    	}
+    	// add by kangyucheng start
+    	
       out.write(buf, 0, bytesRead);
+//      System.out.println(" in IOUtils  copyBytes # write()");
       if ((ps != null) && ps.checkError()) {
         throw new IOException("Unable to write to output stream.");
       }
       bytesRead = in.read(buf);
     }
+    System.out.println("*********** in second copyBytes()  #end  ");
   }
 
   /**
@@ -107,8 +119,10 @@ public class IOUtils {
    */
   public static void copyBytes(InputStream in, OutputStream out, Configuration conf)
     throws IOException {
+	  System.out.println("*********** in 2second copyBytes()  #start ");
     copyBytes(in, out, conf.getInt(
         IO_FILE_BUFFER_SIZE_KEY, IO_FILE_BUFFER_SIZE_DEFAULT), true);
+    System.out.println("*********** in 2second copyBytes()  #  end ");
   }
   
   /**
@@ -122,8 +136,10 @@ public class IOUtils {
    */
   public static void copyBytes(InputStream in, OutputStream out, Configuration conf, boolean close)
     throws IOException {
+	  System.out.println("*********** in third copyBytes()  #start  ");
     copyBytes(in, out, conf.getInt(
         IO_FILE_BUFFER_SIZE_KEY, IO_FILE_BUFFER_SIZE_DEFAULT),  close);
+    System.out.println("*********** in third copyBytes()  # end ");
   }
 
   /**
@@ -137,16 +153,20 @@ public class IOUtils {
    */
   public static void copyBytes(InputStream in, OutputStream out, long count,
       boolean close) throws IOException {
+	  
+	  System.out.println("*********** in last copyBytes()# try  #start  ");
     byte buf[] = new byte[4096];
     long bytesRemaining = count;
     int bytesRead;
 
     try {
       while (bytesRemaining > 0) {
+    	  System.out.println("bytesRemaining"+bytesRemaining);
         int bytesToRead = (int)
           (bytesRemaining < buf.length ? bytesRemaining : buf.length);
 
         bytesRead = in.read(buf, 0, bytesToRead);
+        System.out.println("bytesRead"+bytesRead);
         if (bytesRead == -1)
           break;
 
@@ -165,6 +185,7 @@ public class IOUtils {
         closeStream(in);
       }
     }
+    System.out.println("*********** in last copyBytes()# try  #end  ");
   }
   
   /**

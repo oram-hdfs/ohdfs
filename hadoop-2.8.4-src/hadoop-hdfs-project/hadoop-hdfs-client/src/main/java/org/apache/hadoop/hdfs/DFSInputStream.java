@@ -619,6 +619,7 @@ public class DFSInputStream extends FSInputStream
    * We get block ID and the IDs of the destinations at startup, from the namenode.
    */
   private synchronized DatanodeInfo blockSeekTo(long target) throws IOException {
+	  System.out.println("********** DFSInputStream  # blockSeekTo() start target"+target);
     if (target >= getFileLength()) {
       throw new IOException("Attempted to read past end of file");
     }
@@ -640,7 +641,7 @@ public class DFSInputStream extends FSInputStream
       // Compute desired block
       //
       LocatedBlock targetBlock = getBlockAt(target);
-
+      
       // update current position
       this.pos = target;
       this.blockEnd = targetBlock.getStartOffset() +
@@ -655,11 +656,14 @@ public class DFSInputStream extends FSInputStream
       StorageType storageType = retval.storageType;
       // Latest block if refreshed by chooseDatanode()
       targetBlock = retval.block;
-
+      System.out.println("********** DFSInputStream  # blockSeekTo() --targetBlock :"+targetBlock);
       try {
         blockReader = getBlockReader(targetBlock, offsetIntoBlock,
             targetBlock.getBlockSize() - offsetIntoBlock, targetAddr,
             storageType, chosenNode);
+        
+        System.out.println("********** DFSInputStream  # blockSeekTo()   blockReader: " + blockReader);
+        
         if(connectFailedOnce) {
           DFSClient.LOG.info("Successfully connected to " + targetAddr +
                              " for " + targetBlock.getBlock());
@@ -804,7 +808,9 @@ public class DFSInputStream extends FSInputStream
     @Override
     public int doRead(BlockReader blockReader, int off, int len)
         throws IOException {
+    	
       int nRead = blockReader.read(buf, off, len);
+      //System.out.println("*********DFSINputStream #doread()  nRead:"+nRead);
       updateReadStatistics(readStatistics, nRead, blockReader);
       return nRead;
     }
@@ -866,6 +872,7 @@ public class DFSInputStream extends FSInputStream
   private synchronized int readBuffer(ReaderStrategy reader, int off, int len,
       Map<ExtendedBlock, Set<DatanodeInfo>> corruptedBlockMap)
       throws IOException {
+	  //System.out.println("*************DFSInputStream  readBuffer() start --kyc");
     IOException ioe;
 
     /* we retry current node only once. So this is set to true only here.
@@ -916,6 +923,7 @@ public class DFSInputStream extends FSInputStream
   }
 
   protected synchronized int readWithStrategy(ReaderStrategy strategy, int off, int len) throws IOException {
+	 //System.out.println("*******DFSInputStream  readWithStrategy()   # start  --kyc");
     dfsClient.checkOpen();
     if (closed.get()) {
       throw new IOException("Stream closed");
@@ -929,6 +937,7 @@ public class DFSInputStream extends FSInputStream
           // currentNode can be left as null if previous read had a checksum
           // error on the same block. See HDFS-3067
           if (pos > blockEnd || currentNode == null) {
+        	 System.out.println("readWithStrategy() wang to jump to blockSeekTo() # pos:"+pos+"currentNoe"+currentNode);
             currentNode = blockSeekTo(pos);
           }
           int realLen = (int) Math.min(len, (blockEnd - pos + 1L));
@@ -938,6 +947,7 @@ public class DFSInputStream extends FSInputStream
                   locatedBlocks.getFileLength() - pos);
             }
           }
+          //System.out.println("before readbuffer"+strategy+" "+off+" "+realLen);
           int result = readBuffer(strategy, off, realLen, corruptedBlockMap);
 
           if (result >= 0) {
@@ -978,7 +988,7 @@ public class DFSInputStream extends FSInputStream
   @Override
   public synchronized int read(@Nonnull final byte buf[], int off, int len)
       throws IOException {
-	  System.out.println("DFSInputStream read ()  first 981");
+	  //System.out.println("DFSInputStream read ()  first 991");
     validatePositionedReadArgs(pos, buf, off, len);
     if (len == 0) {
       return 0;
@@ -1955,4 +1965,15 @@ public class DFSInputStream extends FSInputStream
   public synchronized void unbuffer() {
     closeCurrentBlockReaders();
   }
+  
+  //add by kangyucheng 
+
+  public DatanodeInfo getCurrentNode(){
+	  return currentNode;
+  }
+  
+  public long getBlockEnd(){
+	  return blockEnd;
+  }
+
 }

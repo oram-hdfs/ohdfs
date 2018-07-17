@@ -296,7 +296,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
   @VisibleForTesting
   public DFSClient(URI nameNodeUri, ClientProtocol rpcNamenode,
       Configuration conf, FileSystem.Statistics stats) throws IOException {
-	 System.out.println("DFSClient() is constracting # start");
+	 System.out.println("*******DFSClient() is constracting # start");
     // Copy only the required DFSClient configuration
     this.tracer = FsTracer.get(conf);
     this.dfsClientConf = new DfsClientConf(conf);
@@ -337,7 +337,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
           nameNodeUri, ClientProtocol.class, numResponseToDrop,
           nnFallbackToSimpleAuth);
     }
-
+ 
     if (proxyInfo != null) {
       this.dtService = proxyInfo.getDelegationTokenService();
       this.namenode = proxyInfo.getProxy();
@@ -389,7 +389,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
     this.saslClient = new SaslDataTransferClient(
         conf, DataTransferSaslUtil.getSaslPropertiesResolver(conf),
         TrustedChannelResolver.getInstance(conf), nnFallbackToSimpleAuth);
-    System.out.println("DFSClient() is constracting # end");
+    System.out.println("*******DFSClient() is constracting # end  --kyc");
   }
 
   /**

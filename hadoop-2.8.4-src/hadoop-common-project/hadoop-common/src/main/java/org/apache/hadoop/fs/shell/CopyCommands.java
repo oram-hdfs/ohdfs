@@ -254,12 +254,10 @@ class CopyCommands {
       "Flags:\n" +
       "  -p : Preserves access and modification times, ownership and the mode.\n" +
       "  -f : Overwrites the destination if it already exists.\n" +
-      "  -s : excute safe write design b\y kangyucheng.\n" +
-      "  -s : excute safe write design b\y kangyucheng.\n" +
-      "  -s : excute safe write design b\y kangyucheng.\n" +
-      "  -s : excute safe write design b\y kangyucheng.\n" +
-      "  -s : excute safe write design b\y kangyucheng.\n" +
-      
+      "  -s : excute safe write design by kangyucheng.\n" +
+      "  -s : excute safe write design by kangyucheng.\n" +
+      "  -s : excute safe write design by kangyucheng.\n" +
+      "  -s : excute safe write design by kangyucheng.\n" +
       "  -l : Allow DataNode to lazily persist the file to disk. Forces\n" +
       "       replication factor of 1. This flag will result in reduced\n" +
       "       durability. Use with care.\n" +

@@ -105,7 +105,7 @@ abstract class CommandWithDestination extends FsCommand {
   }
   
   protected void setSafe(boolean flag) {
-	System.out.println("the safe was changed by kangyucheng");
+	System.out.println("the safe was changed --kyc");
 	safe = flag;
   }
 	  
@@ -177,10 +177,13 @@ abstract class CommandWithDestination extends FsCommand {
     String pathString = (args.size() < 2) ? Path.CUR_DIR : args.removeLast();
     try {
       dst = new PathData(new URI(pathString), getConf());
+      System.out.println("********CommandWithDestination #getLocalDestination() ,dst --Pathdata was create dst:"+dst+"pathString:"+pathString);
     } catch (URISyntaxException e) {
       if (Path.WINDOWS) {
         // Unlike URI, PathData knows how to parse Windows drive-letter paths.
         dst = new PathData(pathString, getConf());
+        
+        System.out.println("******* in CommandWithDestination #getLocalDestination() ,dst --Pathdate was create :"+dst);
       } else {
         throw new IOException("unexpected URISyntaxException", e);
       }
@@ -197,7 +200,9 @@ abstract class CommandWithDestination extends FsCommand {
   throws IOException {
     if (args.size() < 2) {
       dst = new PathData(Path.CUR_DIR, getConf());
+      System.out.println("in CommandWithDestination #getRemoteDestination() ,dst was create :"+dst);
     } else {
+    	System.out.println("in CommandWithDestination # getRemoteDestination() ,dst was not  create :"+dst);
       String pathString = args.removeLast();
       // if the path is a glob, then it must match one and only one path
       PathData[] items = PathData.expandAsGlob(pathString, getConf());
@@ -216,7 +221,7 @@ abstract class CommandWithDestination extends FsCommand {
   @Override
   protected void processArguments(LinkedList<PathData> args)
   throws IOException {
-	 System.out.println("kangyucheng , this is process Arguments");
+	 System.out.println(" **********CommandWithDestination #processArguments()  --kyc");
     // if more than one arg, the destination must be a directory
     // if one arg, the dst must not exist or must be a directory
     if (args.size() > 1) {
@@ -290,15 +295,28 @@ abstract class CommandWithDestination extends FsCommand {
       throw new PathOperationException(src.toString());        
     } else if (src.stat.isFile()) {
     	
-      copyFileToTarget(src, dst);
+      
 
       //  added by kangyucheng 
-      if (s){
+      if (safe){
       	System.out.println(" -s is true done by kangyucheng,so we should do "
       			+ "safe write or safe read");
-      	System.out.println("we should analys src and dst,so that we can foregy ");	
-      	copyFileToTarget(dst, src);
+      	System.out.println("we should analys src and dst,so that we can foregy ");
+      	
+      	System.out.println("dst.fs:"+dst.fs);
+      	System.out.println("dst.path:"+dst.path);
+      	System.out.println("dst.stat:"+dst.stat);
+      	
+      	
+      	System.out.println("src.fs:"+src.fs);
+      	System.out.println("src.path:"+src.path);
+      	System.out.println("src.stat:"+src.stat);
+ 
+      	
+      	//copyFileToTarget(dst, src);
       }
+      System.out.println("in CommandWithDestination  #processPath()  --kyc ");
+      copyFileToTarget(src, dst);
       //add by kangyucheng  end 
     } else if (src.stat.isDirectory() && !isRecursive()) {
       throw new PathIsDirectoryException(src.toString());
@@ -361,13 +379,18 @@ abstract class CommandWithDestination extends FsCommand {
     final boolean preserveRawXattrs =
         checkPathsForReservedRaw(src.path, target.path);
     
-    System.out.println("hi kangyucheng this is copyFileToTarget ,src is "+src+"\n target is "+arget);
+    System.out.println("*************copyFileToTarget, \n src is "+src+"\n target is "+target);
     
     src.fs.setVerifyChecksum(verifyChecksum);
     InputStream in = null;
     try {
       in = src.fs.open(src.path);
+      //add by kangyucheng start
+      System.out.println("fs:"+src.fs);
+      System.out.println("in:"+in);
+      //add by kangyucheng end
       copyStreamToTarget(in, target);
+      
       preserveAttributes(src, target, preserveRawXattrs);
     } finally {
       IOUtils.closeStream(in);
@@ -425,11 +448,14 @@ abstract class CommandWithDestination extends FsCommand {
    */ 
   protected void copyStreamToTarget(InputStream in, PathData target)
   throws IOException {
+	System.out.println("**************copyStreamToTarget() by kangyucheng  # start");
     if (target.exists && (target.stat.isDirectory() || !overwrite)) {
       throw new PathExistsException(target.toString());
     }
     TargetFileSystem targetFs = new TargetFileSystem(target.fs);
     try {
+    	
+      System.out.println("copyStreamToTarget 's try  by kangyucheng");
       PathData tempTarget = direct ? target : target.suffix("._COPYING_");
       targetFs.setWriteChecksum(writeChecksum);
       targetFs.writeStreamToFile(in, tempTarget, lazyPersist, direct);
@@ -439,6 +465,7 @@ abstract class CommandWithDestination extends FsCommand {
     } finally {
       targetFs.close(); // last ditch effort to ensure temp file is removed
     }
+    System.out.println("**************copyStreamToTarget() by kangyucheng  # end");
   }
 
   /**
@@ -502,14 +529,17 @@ abstract class CommandWithDestination extends FsCommand {
   private static class TargetFileSystem extends FilterFileSystem {
     TargetFileSystem(FileSystem fs) {
       super(fs);
+      System.out.println("TargetFileSystem by kangyucheng");
     }
 
     void writeStreamToFile(InputStream in, PathData target,
         boolean lazyPersist, boolean direct)
         throws IOException {
+    	System.out.println("************TargetFileSystem . # writeStreamToFile() ");
       FSDataOutputStream out = null;
       try {
         out = create(target, lazyPersist, direct);
+        System.out.println("in TargetFileSystem() try {} out :" +out);
         IOUtils.copyBytes(in, out, getConf(), true);
       } finally {
         IOUtils.closeStream(out); // just in case copyBytes didn't

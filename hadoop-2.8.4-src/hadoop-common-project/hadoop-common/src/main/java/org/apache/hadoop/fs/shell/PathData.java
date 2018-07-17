@@ -54,8 +54,7 @@ public class PathData implements Comparable<PathData> {
   public final Path path;
   public FileStatus stat;
   public boolean exists;
-//  
-  public TreeFileSystem treeFileSystem  = new TreeFileSystem();
+
   
   /* True if the URI scheme was not present in the pathString but inferred.
    */

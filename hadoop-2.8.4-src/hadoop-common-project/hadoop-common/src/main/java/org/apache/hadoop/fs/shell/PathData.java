@@ -55,6 +55,7 @@ public class PathData implements Comparable<PathData> {
   public FileStatus stat;
   public boolean exists;
 
+  
   /* True if the URI scheme was not present in the pathString but inferred.
    */
   private boolean inferredSchemeFromPath = false;
@@ -155,6 +156,7 @@ public class PathData implements Comparable<PathData> {
     if (Path.WINDOWS) {
       inferredSchemeFromPath = checkIfSchemeInferredFromPath(pathString);
     }
+    System.out.println("in PathData(),fs"+fs+"is constructed");
   }
 
   // need a static method for the ctor above
@@ -322,10 +324,13 @@ public class PathData implements Comparable<PathData> {
   public static PathData[] expandAsGlob(String pattern, Configuration conf)
   throws IOException {
     Path globPath = new Path(pattern);
-    FileSystem fs = globPath.getFileSystem(conf);    
+    System.out.println("globPath:"+globPath);
+    
+    FileSystem fs = globPath.getFileSystem(conf);  
+    
     FileStatus[] stats = fs.globStatus(globPath);
     PathData[] items = null;
-    
+
     if (stats == null) {
       // remove any quoting in the glob pattern
       pattern = pattern.replaceAll("\\\\(.)", "$1");
@@ -372,7 +377,28 @@ public class PathData implements Comparable<PathData> {
     Arrays.sort(items);
     return items;
   }
-
+  
+//add by kyc start 
+  
+  public static PathData[] expandAsGlob2(String pattern, Configuration conf)
+		  throws IOException {
+	  		pattern= pattern+"_safe_";	
+		    Path globPath = new Path(pattern);
+		    System.out.println("***************in #expandAsGlob2():globPath:"+globPath);
+		    
+		    FileSystem fs = globPath.getFileSystem(conf);  
+		    PathData[] items = null;
+		    
+		      // remove any quoting in the glob pattern
+		      pattern = pattern.replaceAll("\\\\(.)", "$1");
+		      // not a glob & file not found, so add the path with a null stat
+		     items = new PathData[]{ new PathData(fs, pattern, null) };
+		     items[0].setStat(null);
+		    return items;
+		  }
+  //add by kyc end
+  
+  
   private static URI removeAuthority(URI uri) {
     try {
       uri = new URI(

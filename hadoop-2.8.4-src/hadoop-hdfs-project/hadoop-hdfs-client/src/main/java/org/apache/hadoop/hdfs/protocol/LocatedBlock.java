@@ -55,8 +55,21 @@ public class LocatedBlock {
    * List of cached datanode locations
    */
   private DatanodeInfo[] cachedLocs;
+  
+  //add by kangyucheng 
+  private TreeInfo treeInfo =new TreeInfo();
+  
+  public TreeInfo getTreeInfo() {
+	return treeInfo;
+}
 
-  // Used when there are no locations
+  public void setTreeInfo(TreeInfo treeInfo) {
+	this.treeInfo = treeInfo;
+}
+
+//add by kangyucheng end
+
+// Used when there are no locations
   private static final DatanodeInfoWithStorage[] EMPTY_LOCS =
       new DatanodeInfoWithStorage[0];
 
@@ -205,6 +218,22 @@ public class LocatedBlock {
         + "; corrupt=" + corrupt
         + "; offset=" + offset
         + "; locs=" + Arrays.asList(locs)
+        + "; treeInfo="+treeInfo.getMessage()
         + "}";
   }
+}
+
+//add by kangyucheng 
+
+class TreeInfo{
+
+	private  String message= "we have not set it--kyc";
+	public String getMessage() {
+		return message;
+	}
+
+	public void setMessage(String message) {
+		this.message = message;
+	}
+	
 }

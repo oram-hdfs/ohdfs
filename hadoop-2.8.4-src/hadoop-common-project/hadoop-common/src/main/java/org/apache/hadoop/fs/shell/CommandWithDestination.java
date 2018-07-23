@@ -59,15 +59,22 @@ import static org.apache.hadoop.fs.CreateFlag.LAZY_PERSIST;
  */
 abstract class CommandWithDestination extends FsCommand {  
   protected PathData dst;
-  private boolean overwrite = false;
+  //private boolean overwrite = false;
   private boolean verifyChecksum = true;
   private boolean writeChecksum = true;
   private boolean lazyPersist = false;
   private boolean direct = false;
+  
   //design by kangyucheng
   private boolean safe= false;
+  private boolean overwrite = true;
+  private boolean safeWrite = false;
+  //design by kyc -end
 
-  /**
+
+
+
+/**
    * The name of the raw xattr namespace. It would be nice to use
    * XAttr.RAW.name() but we can't reference the hadoop-hdfs project.
    */
@@ -104,11 +111,14 @@ abstract class CommandWithDestination extends FsCommand {
     direct = flag;
   }
   
+  // add by kyc
   protected void setSafe(boolean flag) {
-	System.out.println("the safe was changed by kangyucheng");
 	safe = flag;
   }
-	  
+  protected void setSafeWrite(boolean flag) {
+	safeWrite = flag;
+  }
+  //add by kyc -end
 
   /**
    * If true, the last modified time, last access time,
@@ -177,10 +187,13 @@ abstract class CommandWithDestination extends FsCommand {
     String pathString = (args.size() < 2) ? Path.CUR_DIR : args.removeLast();
     try {
       dst = new PathData(new URI(pathString), getConf());
+      //System.out.println("********CommandWithDestination #getLocalDestination() ,dst --Pathdata was create dst:"+dst+"pathString:"+pathString);
     } catch (URISyntaxException e) {
       if (Path.WINDOWS) {
         // Unlike URI, PathData knows how to parse Windows drive-letter paths.
         dst = new PathData(pathString, getConf());
+        
+        //System.out.println("******* in CommandWithDestination #getLocalDestination() ,dst --Pathdate was create :"+dst);
       } else {
         throw new IOException("unexpected URISyntaxException", e);
       }
@@ -197,7 +210,9 @@ abstract class CommandWithDestination extends FsCommand {
   throws IOException {
     if (args.size() < 2) {
       dst = new PathData(Path.CUR_DIR, getConf());
+      //System.out.println("in CommandWithDestination #getRemoteDestination() ,dst was create :"+dst);
     } else {
+    	//System.out.println("in CommandWithDestination # getRemoteDestination() ,dst was not  create :"+dst);
       String pathString = args.removeLast();
       // if the path is a glob, then it must match one and only one path
       PathData[] items = PathData.expandAsGlob(pathString, getConf());
@@ -216,7 +231,7 @@ abstract class CommandWithDestination extends FsCommand {
   @Override
   protected void processArguments(LinkedList<PathData> args)
   throws IOException {
-	 System.out.println("kangyucheng , this is process Arguments");
+	 //System.out.println(" **********CommandWithDestination #processArguments()  --kyc");
     // if more than one arg, the destination must be a directory
     // if one arg, the dst must not exist or must be a directory
     if (args.size() > 1) {
@@ -246,9 +261,9 @@ abstract class CommandWithDestination extends FsCommand {
       String srcPath = src.fs.makeQualified(src.path).toString();
       String dstPath = dst.fs.makeQualified(target.path).toString();
       
-      System.out.println("kyc, processPathArgument(),this is srcPath"+srcPath);
+     // System.out.println("kyc, processPathArgument(),this is srcPath"+srcPath);
       
-      System.out.println("kyc, processPathArgument(),this is dstPath"+dstPath);
+      //System.out.println("kyc, processPathArgument(),this is dstPath"+dstPath);
       
       if (dstPath.equals(srcPath)) {
         PathIOException e = new PathIOException(src.toString(),
@@ -289,20 +304,97 @@ abstract class CommandWithDestination extends FsCommand {
       // copy the symlink or deref the symlink
       throw new PathOperationException(src.toString());        
     } else if (src.stat.isFile()) {
+    	copyFileToTarget(src, dst);
     	
-      copyFileToTarget(src, dst);
-
+    	
       //  added by kangyucheng 
-      if (s){
-      	System.out.println(" -s is true done by kangyucheng,so we should do "
-      			+ "safe write or safe read");
-      	System.out.println("we should analys src and dst,so that we can foregy ");	
-      	copyFileToTarget(dst, src);
+    // this is for read
+      if (safe){
+      	//System.out.println(" -s is true done by kangyucheng,so we should do safe write or safe read");
+      	//System.out.println("we should analys src and dst,so that we can foregy ");
+      	
+      	System.out.println("dst.fs:"+dst.fs);
+      	System.out.println("dst.path:"+dst.path);
+      	System.out.println("dst.stat:"+dst.stat);
+      	
+      	System.out.println("src.fs:"+src.fs);
+      	System.out.println("src.path:"+src.path);
+      	System.out.println("src.stat:"+src.stat);
+      	
+      	try {
+      		
+			PathData safe_dst ;
+			
+      		String dst_pathString = src.toString();
+      		System.out.println("safe_dst_pathString"+dst_pathString);
+      		// if the path is a glob, then it must match one and only one path
+			PathData[] items = PathData.expandAsGlob2(dst_pathString, getConf());
+			switch (items.length) {
+				case 0:
+			          throw new PathNotFoundException(dst_pathString);
+			    case 1:
+			    	safe_dst = items[0];
+			        break;
+			    default:
+			    	throw new PathIOException(dst_pathString, "Too many matches");
+			    	}
+	
+	    	System.out.println("safe_dst.fs:"+safe_dst.fs);
+	      	System.out.println("safe_dst.path:"+safe_dst.path);
+	      	System.out.println("safe_dst.stat:"+safe_dst.stat);
+	      	
+	      	
+	      	copyFileToTarget2(src,dst,safe_dst);
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
       }
+      // this is  for write
+      else if (safeWrite){
+    	  PathData safe_src ;
+    	  String src_pathString = src.toString();
+    	  PathData[] items = PathData.expandAsGlob2(src_pathString, getConf());
+			switch (items.length) {
+				case 0:
+			          throw new PathNotFoundException(src_pathString);
+			    case 1:
+			    	safe_src = items[0];
+			        break;
+			    default:
+			    	throw new PathIOException(src_pathString, "Too many matches");
+			    	}
+			System.out.println("safe_src.fs:"+safe_src.fs);
+	      	System.out.println("safe_src.path:"+safe_src.path);
+	      	System.out.println("safe_src.stat:"+safe_src.stat);
+	      	
+	      	copyFileToTarget3(src,dst,safe_src);
+      }
+      
+      
+      
+      System.out.println("in CommandWithDestination  #processPath()  --kyc ");
+      
       //add by kangyucheng  end 
+      
+      
+      
+      
+      
     } else if (src.stat.isDirectory() && !isRecursive()) {
       throw new PathIsDirectoryException(src.toString());
     }
+  }
+  /**
+   *  select a file by random in hdfs
+   *  add by kyc
+   *  @return String  
+   */
+  public static String getDummyFile(){
+	  
+	  return "";
   }
 
   @Override
@@ -361,19 +453,90 @@ abstract class CommandWithDestination extends FsCommand {
     final boolean preserveRawXattrs =
         checkPathsForReservedRaw(src.path, target.path);
     
-    System.out.println("hi kangyucheng this is copyFileToTarget ,src is "+src+"\n target is "+arget);
+    System.out.println("*************copyFileToTarget, \n src is "+src+"\n target is "+target);
     
     src.fs.setVerifyChecksum(verifyChecksum);
     InputStream in = null;
     try {
       in = src.fs.open(src.path);
+      //add by kangyucheng start
+      System.out.println("fs:"+src.fs);
+      System.out.println("in:"+in);
+      //add by kangyucheng end
       copyStreamToTarget(in, target);
+      
       preserveAttributes(src, target, preserveRawXattrs);
     } finally {
       IOUtils.closeStream(in);
     }
   }
-  
+	
+	
+	
+	
+	
+	
+///////////////////////////////////////add by kyc start ////////////////////////////////////
+	/**
+	   * add by kangyucheng   
+	   * @throws IOException if copy fails
+	   */ 
+		protected void copyFileToTarget2(PathData src, PathData target,PathData safe_target)
+	      throws IOException {
+	    final boolean preserveRawXattrs =
+	        checkPathsForReservedRaw(src.path, target.path);
+	    
+	    System.out.println("*************copyFileToTarget2, \n src is "+src+"\n target is "+target);
+	    
+	    src.fs.setVerifyChecksum(verifyChecksum);
+	    InputStream in = null;
+	    try {
+	      in = src.fs.open(src.path);
+	      //add by kangyucheng start
+	      System.out.println("fs:"+src.fs);
+	      System.out.println("in:"+in);
+	      //add by kangyucheng end
+	      copyStreamToTarget2(in, target,safe_target,src);
+	      
+	      preserveAttributes(src, target, preserveRawXattrs);
+	    } finally {
+	      IOUtils.closeStream(in);
+	    }
+	  }
+		
+		protected void copyFileToTarget3(PathData src, PathData target,PathData safe_src)
+			      throws IOException {
+			    final boolean preserveRawXattrs =
+			        checkPathsForReservedRaw(safe_src.path, target.path);
+			    
+			    System.out.println("*************copyFileToTarget3, \n safe_src is "+safe_src+"\n target is "+target);
+			    
+			    safe_src.fs.setVerifyChecksum(verifyChecksum);
+			    InputStream in = null;
+			    try {
+			      in = safe_src.fs.open(safe_src.path);
+			      //add by kangyucheng start
+			      System.out.println("fs:"+safe_src.fs);
+			      System.out.println("in:"+in);
+			      //add by kangyucheng end
+			      copyStreamToTarget3(in, target);
+			      
+			      preserveAttributes(safe_src, target, preserveRawXattrs);
+			    } finally {
+			      IOUtils.closeStream(in);
+			    }
+			  }
+		//////////////////////////////add by kangyucheng////////////////////////////////////////
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
   /**
    * Check the source and target paths to ensure that they are either both in
    * /.reserved/raw or neither in /.reserved/raw. If neither src nor target are
@@ -425,22 +588,99 @@ abstract class CommandWithDestination extends FsCommand {
    */ 
   protected void copyStreamToTarget(InputStream in, PathData target)
   throws IOException {
+	System.out.println("**************copyStreamToTarget() by kangyucheng  # start");
     if (target.exists && (target.stat.isDirectory() || !overwrite)) {
       throw new PathExistsException(target.toString());
     }
     TargetFileSystem targetFs = new TargetFileSystem(target.fs);
     try {
+    	
+      System.out.println("copyStreamToTarget 's try  by kangyucheng");
       PathData tempTarget = direct ? target : target.suffix("._COPYING_");
       targetFs.setWriteChecksum(writeChecksum);
-      targetFs.writeStreamToFile(in, tempTarget, lazyPersist, direct);
+      targetFs.writeStreamToFile(in, tempTarget, lazyPersist, true);
       if (!direct) {
         targetFs.rename(tempTarget, target);
       }
     } finally {
       targetFs.close(); // last ditch effort to ensure temp file is removed
     }
+    System.out.println("**************copyStreamToTarget() by kangyucheng  # end");
   }
 
+  
+  /////////////////////////////add by kyc start//////////////////////
+  /**
+   * If direct write is disabled ,copies the stream contents to a temporary
+   * file "<target>._COPYING_". If the copy is
+   * successful, the temporary file will be renamed to the real path,
+   * else the temporary file will be deleted.
+   * if direct write is enabled , then creation temporary file is skipped.
+   * @param in the input stream for the copy
+   * @param target where to store the contents of the stream
+   * @throws IOException if copy fails
+   */ 
+  protected void copyStreamToTarget2(InputStream in, PathData target,PathData safe_target,PathData src)
+  throws IOException {
+	System.out.println("**************copyStreamToTarget()2 by kangyucheng  # start");
+    if (safe_target.exists && (safe_target.stat.isDirectory() || !overwrite)) {
+      throw new PathExistsException(safe_target.toString());
+    }
+    
+    TargetFileSystem targetFs = new TargetFileSystem(target.fs);
+    TargetFileSystem safeTargetFS = new TargetFileSystem(safe_target.fs);
+    try {
+    	
+      System.out.println("copyStreamToTarget2 's try  by kangyuc heng");
+      PathData tempTarget = direct ? target : target.suffix("._COPYING_");
+    
+      //PathData tempSafe_target = direct ? safe_target : safe_target.suffix("._COPYING_");
+      safeTargetFS.setWriteChecksum(writeChecksum);
+      safeTargetFS.writeStreamToFile2(in, tempTarget, lazyPersist, direct,safe_target,src);
+      if (!direct) {
+        //targetFs.rename(tempTarget, target);
+        //safeTargetFS.rename(tempSafe_target, safe_target);
+      }
+    } finally {
+      targetFs.close(); // last ditch effort to ensure temp file is removed
+      safeTargetFS.close();//add by kangyucheng
+    }
+    System.out.println("**************copyStreamToTarget2() by kangyucheng  # end");
+  }
+  /**
+   * If direct write is disabled ,copies the stream contents to a temporary
+   * file "<target>._COPYING_". If the copy is
+   * successful, the temporary file will be renamed to the real path,
+   * else the temporary file will be deleted.
+   * if direct write is enabled , then creation temporary file is skipped.
+   * @param in the input stream for the copy
+   * @param target where to store the contents of the stream
+   * @throws IOException if copy fails
+   */ 
+  protected void copyStreamToTarget3(InputStream in, PathData target)
+  throws IOException {
+	System.out.println("**************copyStreamToTarget() by kangyucheng  # start");
+    if (target.exists && (target.stat.isDirectory() || !overwrite)) {
+      throw new PathExistsException(target.toString());
+    }
+    TargetFileSystem targetFs = new TargetFileSystem(target.fs);
+    try {
+    	
+      System.out.println("copyStreamToTarget 's try  by kangyucheng");
+      PathData tempTarget = direct ? target : target.suffix("._COPYING_");
+      targetFs.setWriteChecksum(writeChecksum);
+      targetFs.writeStreamToFile3(in, tempTarget, lazyPersist, true);
+      if (!direct) {
+        targetFs.rename(tempTarget, target);
+      }
+    } finally {
+      targetFs.close(); // last ditch effort to ensure temp file is removed
+    }
+    System.out.println("**************copyStreamToTarget() by kangyucheng  # end");
+  }
+
+  
+  /////////////////////////////add by kyc end//////////////////////
   /**
    * Preserve the attributes of the source to the target.
    * The method calls {@link #shouldPreserve(FileAttribute)} to check what
@@ -502,19 +742,63 @@ abstract class CommandWithDestination extends FsCommand {
   private static class TargetFileSystem extends FilterFileSystem {
     TargetFileSystem(FileSystem fs) {
       super(fs);
+      System.out.println("TargetFileSystem by kangyucheng");
     }
 
     void writeStreamToFile(InputStream in, PathData target,
         boolean lazyPersist, boolean direct)
         throws IOException {
+    	System.out.println("************TargetFileSystem . # writeStreamToFile() ");
       FSDataOutputStream out = null;
       try {
         out = create(target, lazyPersist, direct);
+        System.out.println("in TargetFileSystem() try {} out :" +out);
         IOUtils.copyBytes(in, out, getConf(), true);
       } finally {
         IOUtils.closeStream(out); // just in case copyBytes didn't
       }
     }
+    ///////////////////////////add by kyc start////////////////////////////////////
+
+    void writeStreamToFile2(InputStream in, PathData target,
+            boolean lazyPersist, boolean direct, PathData safe_target,PathData src)
+            throws IOException {
+        	System.out.println("************TargetFileSystem . # writeStreamToFile2() ");
+          FSDataOutputStream out = null;
+          FSDataOutputStream safe_out = null;
+          try {
+            //out = create(target, lazyPersist, direct);
+      
+            safe_out = create(safe_target,lazyPersist, direct);
+            
+            IOUtils.copyBytes2(in, out,getConf(), true, safe_out);
+            
+          } finally {
+           IOUtils.closeStream(out); // just in case copyBytes didn't
+            
+            IOUtils.closeStream(safe_out);
+            
+            src.fs.delete(src.path,false);
+            // Trash.moveToAppropriateTrash(src.fs, src.path, getConf());
+           safe_target.fs.rename(safe_target.path, src.path);
+            
+          }
+        }
+    void writeStreamToFile3(InputStream in, PathData target,
+            boolean lazyPersist, boolean direct)
+            throws IOException {
+        	System.out.println("************TargetFileSystem . # writeStreamToFile() ");
+          FSDataOutputStream out = null;
+          try {
+            out = create(target, lazyPersist, direct);
+            System.out.println("in TargetFileSystem() try {} out :" +out);
+            IOUtils.copyBytes(in, out, getConf(), true);
+          } finally {
+            IOUtils.closeStream(out); // just in case copyBytes didn't
+          }
+    }
+    ////////////////////////////////////////////add by kyc end///////////////////////////////////
+    
     
     // tag created files as temp files
     FSDataOutputStream create(PathData item, boolean lazyPersist,
@@ -534,11 +818,12 @@ abstract class CommandWithDestination extends FsCommand {
                         null,
                         null);
         } else {
+        	System.out.println("item.path:"+item.path+" ");
           return create(item.path, true);
         }
       } finally { // might have been created but stream was interrupted
         if (!direct) {
-          deleteOnExit(item.path);
+          //deleteOnExit(item.path);
         }
       }
     }

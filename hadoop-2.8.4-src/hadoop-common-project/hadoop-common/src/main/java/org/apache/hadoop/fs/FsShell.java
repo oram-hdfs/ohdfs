@@ -92,12 +92,11 @@ public class FsShell extends Configured implements Tool {
   }
   
   protected void init() throws IOException {
-	System.out.println("init() was doing by kangyucheng");
+	System.out.println("***************FsShell  # init() # start   --kyc ");
     getConf().setQuietMode(true);
     UserGroupInformation.setConfiguration(getConf());
-    System.out.println(" config() by kangyucheng");
     if (commandFactory == null) {
-    	System.out.println("cmd reggister was doing by kangyucheng");
+    	
       commandFactory = new CommandFactory(getConf());
       commandFactory.addObject(new Help(), "-help");
       commandFactory.addObject(new Usage(), "-usage");
@@ -106,6 +105,7 @@ public class FsShell extends Configured implements Tool {
     this.tracer = new Tracer.Builder("FsShell").
         conf(TraceUtils.wrapHadoopConf(SHELL_HTRACE_PREFIX, getConf())).
         build();
+    System.out.println("***************FsShell  # init() # end   --kyc ");
   }
 
   protected void registerCommands(CommandFactory factory) {
@@ -296,16 +296,16 @@ public class FsShell extends Configured implements Tool {
   @Override
   public int run(String argv[]) throws Exception {
     // initialize FsShell
+	System.out.println("*********************  FsShell  #+run  () start  --kyc ");
     init();
     int exitCode = -1;
     if (argv.length < 1) {
       printUsage(System.err);
     } else {
       String cmd = argv[0];
-      System.out.println(cmd+"cmd was find by kangyucheng");
+      System.out.println("cmd: "+cmd+" was found --kyc");
       Command instance = null;
       try {
-    	System.out.println("kangyucheng has find the entry of command Factory");
         instance = commandFactory.getInstance(cmd);
         if (instance == null) {
           throw new UnknownCommandException();
@@ -319,7 +319,7 @@ public class FsShell extends Configured implements Tool {
           scope.getSpan().addKVAnnotation("args", args);
         }
         try {
-          System.out.println("kangyucheng stare to execute cmd ");
+          System.out.println(" in FsShell  #+run  () execute cmd  --kyc ");
           exitCode = instance.run(Arrays.copyOfRange(argv, 1, argv.length));
         } finally {
           scope.close();
@@ -343,6 +343,7 @@ public class FsShell extends Configured implements Tool {
       }
     }
     tracer.close();
+    System.out.println("*********************  FsShell  #+run  () #end  --kyc ");
     return exitCode;
   }
   
@@ -377,7 +378,7 @@ public class FsShell extends Configured implements Tool {
    * @throws Exception upon error
    */
   public static void main(String argv[]) throws Exception {
-	System.out.println("kangyucheng has find the entry of shell");
+	System.out.println("*********************  FsShell  #+main ()  #start  --kyc");
     FsShell shell = newShellInstance();
     Configuration conf = new Configuration();
     conf.setQuietMode(false);
@@ -388,6 +389,7 @@ public class FsShell extends Configured implements Tool {
     } finally {
       shell.close();
     }
+    System.out.println("*********************  FsShell  #+main ()  #end  --kyc");
     System.exit(res);
   }
 

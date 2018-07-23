@@ -116,12 +116,14 @@ class Delete {
       // etc), then the path will just be deleted because moveToTrash returns
       // false and it falls thru to fs.delete.  this doesn't seem right
       if (moveToTrash(item) || !canBeSafelyDeleted(item)) {
+    	  System.out.println("*********************************Delete() #processPathitem:"+item);
         return;
       }
       if (!item.fs.delete(item.path, deleteDirs)) {
         throw new PathIOException(item.toString());
       }
-      out.println("Deleted " + item);
+      out.println("*********************************Delete() #processPath#item:"+item+"  deleteDirs:"+deleteDirs );
+      out.println("Deleted Deleted Deleted Deleted" + item);
     }
 
     private boolean canBeSafelyDeleted(PathData item)
@@ -146,11 +148,13 @@ class Delete {
       return shouldDelete;
     }
 
-    private boolean moveToTrash(PathData item) throws IOException {
+    public boolean moveToTrash(PathData item) throws IOException {
       boolean success = false;
       if (!skipTrash) {
         try {
+        	System.out.print("Delete  #moveToTrash() ");
           success = Trash.moveToAppropriateTrash(item.fs, item.path, getConf());
+          System.out.println("conf:"+getConf()+"   success:"+success);
         } catch(FileNotFoundException fnfe) {
           throw fnfe;
         } catch (IOException ioe) {

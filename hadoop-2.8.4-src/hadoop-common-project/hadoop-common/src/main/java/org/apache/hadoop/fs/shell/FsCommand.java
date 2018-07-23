@@ -100,6 +100,7 @@ abstract public class FsCommand extends Command {
   @Override
   protected void processRawArguments(LinkedList<String> args)
       throws IOException {
+	  System.out.println("in FsCommond processRawArguments() --kyc start");
     LinkedList<PathData> expendedArgs = expandArguments(args);
     // If "fs.defaultFs" is not set appropriately, it warns the user that the
     // command is not running against HDFS.
@@ -116,6 +117,7 @@ abstract public class FsCommand extends Command {
             getCommandName());
       }
     }
+    System.out.println("in FsCommond processRawArguments() --kyc end: expendedArgs:"+expendedArgs);
     processArguments(expendedArgs);
   }
 }

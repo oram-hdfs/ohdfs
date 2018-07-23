@@ -222,6 +222,8 @@ abstract public class Command extends Configured {
    */
   protected LinkedList<PathData> expandArguments(LinkedList<String> args)
   throws IOException {
+	  System.out.println("in Commond # expenfArguments() --kyc start");
+	  
     LinkedList<PathData> expandedArgs = new LinkedList<PathData>();
     for (String arg : args) {
       try {
@@ -242,11 +244,13 @@ abstract public class Command extends Configured {
    * @throws IOException if anything goes wrong...
    */
   protected List<PathData> expandArgument(String arg) throws IOException {
+	  System.out.println("expandArgument() arg:"+arg+"--kyc start");
     PathData[] items = PathData.expandAsGlob(arg, getConf());
     if (items.length == 0) {
       // it's a glob that failed to match
       throw new PathNotFoundException(arg);
     }
+    System.out.println("expandArgument() items:"+items+"--kyc end");
     return Arrays.asList(items);
   }
 
@@ -260,6 +264,7 @@ abstract public class Command extends Configured {
    */
   protected void processArguments(LinkedList<PathData> args)
   throws IOException {
+	  System.out.println("In Commond processRawArguments() args:"+args);
     for (PathData arg : args) {
       try {
         processArgument(arg);
@@ -277,6 +282,7 @@ abstract public class Command extends Configured {
    * @throws IOException if anything goes wrong...
    */
   protected void processArgument(PathData item) throws IOException {
+	  System.out.println(item);
     if (item.exists) {
       processPathArgument(item);
     } else {
@@ -295,6 +301,7 @@ abstract public class Command extends Configured {
   protected void processPathArgument(PathData item) throws IOException {
     // null indicates that the call is not via recursion, ie. there is
     // no parent directory that was expanded
+	  System.out.println("processPathArgument()"+item);
     depth = 0;
     processPaths(null, item);
   }
@@ -322,6 +329,7 @@ abstract public class Command extends Configured {
   protected void processPaths(PathData parent, PathData ... items)
   throws IOException {
     // TODO: this really should be iterative
+	  System.out.println("processPaths:parents"+parent);
     for (PathData item : items) {
       try {
         processPath(item);

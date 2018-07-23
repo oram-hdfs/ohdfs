@@ -251,6 +251,9 @@ public class DFSOutputStream extends FSOutputSummer
       FsPermission masked, EnumSet<CreateFlag> flag, boolean createParent,
       short replication, long blockSize, Progressable progress,
       DataChecksum checksum, String[] favoredNodes) throws IOException {
+	  System.out.println("************DFSOutputStream #newStreamForCreate");
+	  System.out.println("***********dfsClient:"+dfsClient
+			  +"src:"+src +"masked"+masked+"blockSize"+blockSize+"favoredNodes"+favoredNodes);
     try (TraceScope ignored =
              dfsClient.newPathTraceScope("newStreamForCreate", src)) {
       HdfsFileStatus stat = null;
@@ -296,6 +299,9 @@ public class DFSOutputStream extends FSOutputSummer
       Preconditions.checkNotNull(stat, "HdfsFileStatus should not be null!");
       final DFSOutputStream out = new DFSOutputStream(dfsClient, src, stat,
           flag, progress, checksum, favoredNodes);
+      System.out.println(out);
+      System.out.println("***********dfsClient:"+dfsClient
+			  +"src:"+src +"stat"+stat+"masked"+masked+"blockSize"+"flag"+blockSize+"progress"+progress+"favoredNodes"+favoredNodes);
       out.start();
       return out;
     }

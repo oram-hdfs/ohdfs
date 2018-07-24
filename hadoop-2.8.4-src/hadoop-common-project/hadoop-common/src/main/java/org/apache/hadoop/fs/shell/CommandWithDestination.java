@@ -780,7 +780,7 @@ abstract class CommandWithDestination extends FsCommand {
           } finally {
             IOUtils.closeStream(out); // just in case copyBytes didn't
             
-            target.fs.delete(target.path,true);
+            //target.fs.delete(target.path,true);
           }
     }
     ////////////////////////////////////////////add by kyc end///////////////////////////////////

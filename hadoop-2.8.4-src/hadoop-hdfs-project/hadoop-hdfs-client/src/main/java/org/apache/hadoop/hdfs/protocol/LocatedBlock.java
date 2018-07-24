@@ -57,15 +57,15 @@ public class LocatedBlock {
   private DatanodeInfo[] cachedLocs;
   
   //add by kangyucheng 
-  private TreeInfo treeInfo =new TreeInfo();
-  
-  public TreeInfo getTreeInfo() {
-	return treeInfo;
-}
-
-  public void setTreeInfo(TreeInfo treeInfo) {
-	this.treeInfo = treeInfo;
-}
+//  private TreeInfo treeInfo =new TreeInfo();
+//  
+//  public TreeInfo getTreeInfo() {
+//	return treeInfo;
+//}
+//
+//  public void setTreeInfo(TreeInfo treeInfo) {
+//	this.treeInfo = treeInfo;
+//}
 
 //add by kangyucheng end
 
@@ -218,22 +218,21 @@ public class LocatedBlock {
         + "; corrupt=" + corrupt
         + "; offset=" + offset
         + "; locs=" + Arrays.asList(locs)
-        + "; treeInfo="+treeInfo.getMessage()
         + "}";
   }
 }
 
 //add by kangyucheng 
 
-class TreeInfo{
-
-	private  String message= "we have not set it--kyc";
-	public String getMessage() {
-		return message;
-	}
-
-	public void setMessage(String message) {
-		this.message = message;
-	}
-	
-}
+//class TreeInfo{
+//
+//	private  String message= "we have not set it--kyc";
+//	public String getMessage() {
+//		return message;
+//	}
+//
+//	public void setMessage(String message) {
+//		this.message = message;
+//	}
+//	
+//}

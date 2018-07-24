@@ -281,7 +281,7 @@ public class DFSInputStream extends FSInputStream
    */
   void openInfo(boolean refreshLocatedBlocks) throws IOException {
     final DfsClientConf conf = dfsClient.getConf();
-    System.out.println("DFSInputStream refreshLocatedBlocks()");
+//    System.out.println("DFSInputStream refreshLocatedBlocks()");
     synchronized(infoLock) {
       lastBlockBeingWrittenLength =
           fetchLocatedBlocksAndGetLastBlockLength(refreshLocatedBlocks);
@@ -321,13 +321,13 @@ public class DFSInputStream extends FSInputStream
 
   private long fetchLocatedBlocksAndGetLastBlockLength(boolean refresh)
       throws IOException {
-	  System.out.println("DFSInputStream  #fetchLocatedBlocksAndGetLastBlockLength()  # start ");
+//	  System.out.println("DFSInputStream  #fetchLocatedBlocksAndGetLastBlockLength()  # start ");
     LocatedBlocks newInfo = locatedBlocks;
     
     if (locatedBlocks == null || refresh) {
       newInfo = dfsClient.getLocatedBlocks(src, 0);
     }
-    System.out.println("DfSInputStream  #fetchLocatedBlocksAndGetLastBlockLength()  newInfo:"+newInfo);
+  System.out.println("LocatedBlock:"+newInfo);
     DFSClient.LOG.debug("newInfo = {}", newInfo);
     if (newInfo == null) {
       throw new IOException("Cannot open filename " + src);
@@ -370,7 +370,7 @@ public class DFSInputStream extends FSInputStream
   private long readBlockLength(LocatedBlock locatedblock) throws IOException {
     assert locatedblock != null : "LocatedBlock cannot be null";
     int replicaNotFoundCount = locatedblock.getLocations().length;
-    System.out.println("DFSInputStream #readBlockLength()");
+//    System.out.println("DFSInputStream #readBlockLength()");
     final DfsClientConf conf = dfsClient.getConf();
     final int timeout = conf.getSocketTimeout();
     LinkedList<DatanodeInfo> nodeList = new LinkedList<DatanodeInfo>(
@@ -387,7 +387,7 @@ public class DFSInputStream extends FSInputStream
             conf.isConnectToDnViaHostname(), locatedblock);
 
         final long n = cdp.getReplicaVisibleLength(locatedblock.getBlock());
-        System.out.println("DFSInputStream #readBlockLength() n>=0  or n==0: "+n);
+//        System.out.println("DFSInputStream #readBlockLength() n>=0  or n==0: "+n);
         if (n >= 0) {
         	
           return n;
@@ -619,7 +619,7 @@ public class DFSInputStream extends FSInputStream
    * We get block ID and the IDs of the destinations at startup, from the namenode.
    */
   private synchronized DatanodeInfo blockSeekTo(long target) throws IOException {
-	  System.out.println("********** DFSInputStream  # blockSeekTo() start target"+target);
+//	  System.out.println("********** DFSInputStream  # blockSeekTo() start target"+target);
     if (target >= getFileLength()) {
       throw new IOException("Attempted to read past end of file");
     }
@@ -656,13 +656,13 @@ public class DFSInputStream extends FSInputStream
       StorageType storageType = retval.storageType;
       // Latest block if refreshed by chooseDatanode()
       targetBlock = retval.block;
-      System.out.println("********** DFSInputStream  # blockSeekTo() --targetBlock :"+targetBlock);
+//    System.out.println("********** DFSInputStream  # blockSeekTo() --targetBlock :"+targetBlock);
       try {
         blockReader = getBlockReader(targetBlock, offsetIntoBlock,
             targetBlock.getBlockSize() - offsetIntoBlock, targetAddr,
             storageType, chosenNode);
         
-        System.out.println("********** DFSInputStream  # blockSeekTo()   blockReader: " + blockReader);
+//        System.out.println("********** DFSInputStream  # blockSeekTo()   blockReader: " + blockReader);
         
         if(connectFailedOnce) {
           DFSClient.LOG.info("Successfully connected to " + targetAddr +
@@ -754,7 +754,7 @@ public class DFSInputStream extends FSInputStream
 
   @Override
   public synchronized int read() throws IOException {
-	  System.out.println("DFSInputStream  synchronized int read()");
+//	  System.out.println("DFSInputStream  synchronized int read()");
     if (oneByteBuf == null) {
       oneByteBuf = new byte[1];
     }
@@ -937,7 +937,7 @@ public class DFSInputStream extends FSInputStream
           // currentNode can be left as null if previous read had a checksum
           // error on the same block. See HDFS-3067
           if (pos > blockEnd || currentNode == null) {
-        	 System.out.println("readWithStrategy() wang to jump to blockSeekTo() # pos:"+pos+"currentNoe"+currentNode);
+//        	 System.out.println("readWithStrategy() wang to jump to blockSeekTo() # pos:"+pos+"currentNoe"+currentNode);
             currentNode = blockSeekTo(pos);
           }
           int realLen = (int) Math.min(len, (blockEnd - pos + 1L));
@@ -1002,7 +1002,7 @@ public class DFSInputStream extends FSInputStream
 
   @Override
   public synchronized int read(final ByteBuffer buf) throws IOException {
-	  System.out.println("DFSInputStream read ()  second  995");
+//	  System.out.println("DFSInputStream read ()  second  995");
     ReaderStrategy byteBufferReader = new ByteBufferStrategy(buf);
     try (TraceScope ignored =
              dfsClient.newPathTraceScope("DFSInputStream#byteBufferRead", src)){
@@ -1516,7 +1516,7 @@ public class DFSInputStream extends FSInputStream
   @Override
   public int read(long position, byte[] buffer, int offset, int length)
       throws IOException {
-	  System.out.println("DFSInputStream read() 1509");
+//	  System.out.println("DFSInputStream read() 1509");
     validatePositionedReadArgs(position, buffer, offset, length);
     if (length == 0) {
       return 0;
@@ -1833,7 +1833,7 @@ public class DFSInputStream extends FSInputStream
   public synchronized ByteBuffer read(ByteBufferPool bufferPool,
       int maxLength, EnumSet<ReadOption> opts)
           throws IOException, UnsupportedOperationException {
-	  System.out.println("DfsInputStream synchronized ByteBuffer read()  1826");
+//	  System.out.println("DfsInputStream synchronized ByteBuffer read()  1826");
     if (maxLength == 0) {
       return EMPTY_BUFFER;
     } else if (maxLength < 0) {

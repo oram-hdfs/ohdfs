@@ -220,19 +220,17 @@ class CopyCommands {
     throws IOException {
 //      CommandFormat cf = new CommandFormat(
 //          1, Integer.MAX_VALUE, "crc", "ignoreCrc", "p", "f");
-      System.out.println("s was added to code format by kangyucheng");
+  
       CommandFormat cf = new CommandFormat(
               1, Integer.MAX_VALUE, "crc", "ignoreCrc", "p", "f","s");
       cf.parse(args);
       setWriteChecksum(cf.getOpt("crc"));
       setVerifyChecksum(!cf.getOpt("ignoreCrc"));
       setPreserve(cf.getOpt("p"));
-      setOverwrite(cf.getOpt("f"));
-      
-      System.out.println("s was added to get code by kangyucheng  down");
-      setSafe(cf.getOpt("s"));
-      System.out.println("s was added to get code by kangyucheng  up");
-      
+      setOverwrite(cf.getOpt("f")); 
+     
+      setSafeRead(cf.getOpt("s"));//add by kyc
+
       setRecursive(true);
       getLocalDestination(args);
     }
@@ -246,7 +244,7 @@ class CopyCommands {
 //    public static final String USAGE =
 //        "[-f] [-p] [-l] [-d] <localsrc> ... <dst>";
     public static final String USAGE =
-            "[-s] [-f] [-p] [-l] [-d] <localsrc> ... <dst>";
+            "[-w] [-f] [-p] [-l] [-d] <localsrc> ... <dst>";
     public static final String DESCRIPTION =
       "Copy files from the local file system " +
       "into fs. Copying fails if the file already " +
@@ -254,10 +252,10 @@ class CopyCommands {
       "Flags:\n" +
       "  -p : Preserves access and modification times, ownership and the mode.\n" +
       "  -f : Overwrites the destination if it already exists.\n" +
-      "  -s : excute safe write design by kangyucheng.\n" +
-      "  -s : excute safe write design by kangyucheng.\n" +
-      "  -s : excute safe write design by kangyucheng.\n" +
-      "  -s : excute safe write design by kangyucheng.\n" +
+      "  -w : excute safe write design by kangyucheng.\n" +
+      "  -w : excute safe write design by kangyucheng.\n" +
+      "  -w : excute safe write design by kangyucheng.\n" +
+      "  -w : excute safe write design by kangyucheng.\n" +
       "  -l : Allow DataNode to lazily persist the file to disk. Forces\n" +
       "       replication factor of 1. This flag will result in reduced\n" +
       "       durability. Use with care.\n" +
@@ -268,17 +266,15 @@ class CopyCommands {
 //      CommandFormat cf =
 //          new CommandFormat(1, Integer.MAX_VALUE, "f", "p", "l", "d");
       CommandFormat cf =
-              new CommandFormat(1, Integer.MAX_VALUE, "f", "p", "l", "d","s");
+              new CommandFormat(1, Integer.MAX_VALUE, "f", "p", "l", "d","w");
       cf.parse(args);
       setOverwrite(cf.getOpt("f"));
       setPreserve(cf.getOpt("p"));
       setLazyPersist(cf.getOpt("l"));
       setDirectWrite(cf.getOpt("d"));
-      
-      System.out.println("s was added to put code by kangyucheng  down");
-      setSafe(cf.getOpt("s"));
-      System.out.println("s was added to put code by kangyucheng  up");
-      
+
+      setSafeWrite(cf.getOpt("w"));//add by kyc
+   
       getRemoteDestination(args);
       // should have a -r option
       setRecursive(true);

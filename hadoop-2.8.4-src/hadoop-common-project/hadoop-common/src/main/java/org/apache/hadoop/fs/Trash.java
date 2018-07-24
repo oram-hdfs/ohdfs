@@ -72,7 +72,7 @@ public class Trash extends Configured {
   public static boolean moveToAppropriateTrash(FileSystem fs, Path p,
       Configuration conf) throws IOException {
 	  
-	 System.out.println("TRash # moveToAppropriateTrash() fs :"+fs+" p: "+p+" conf:"+conf);
+//	 System.out.println("TRash # moveToAppropriateTrash() fs :"+fs+" p: "+p+" conf:"+conf);
     Path fullyResolvedPath = fs.resolvePath(p);
     FileSystem fullyResolvedFs =
         FileSystem.get(fullyResolvedPath.toUri(), conf);

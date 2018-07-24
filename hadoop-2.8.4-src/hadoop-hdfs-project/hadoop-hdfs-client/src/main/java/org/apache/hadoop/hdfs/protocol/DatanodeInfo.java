@@ -55,7 +55,10 @@ public class DatanodeInfo extends DatanodeID implements Node {
   private String softwareVersion;
   private List<String> dependentHostNames = new LinkedList<>();
   private String upgradeDomain;
-
+  
+  //public TreeNode root;
+  //public TreeNode leaf;
+  
   // Datanode administrative states
   public enum AdminStates {
     NORMAL("In Service"),
@@ -586,4 +589,8 @@ public class DatanodeInfo extends DatanodeID implements Node {
   public void setSoftwareVersion(String softwareVersion) {
     this.softwareVersion = softwareVersion;
   }
+}
+//remain to do --kyc
+class TreeNode{
+	
 }

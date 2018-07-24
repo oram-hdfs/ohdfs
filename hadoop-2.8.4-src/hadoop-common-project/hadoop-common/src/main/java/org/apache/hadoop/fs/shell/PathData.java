@@ -156,7 +156,7 @@ public class PathData implements Comparable<PathData> {
     if (Path.WINDOWS) {
       inferredSchemeFromPath = checkIfSchemeInferredFromPath(pathString);
     }
-    System.out.println("in PathData(),fs"+fs+"is constructed");
+//    System.out.println("in PathData(),fs"+fs+"is constructed");
   }
 
   // need a static method for the ctor above
@@ -324,7 +324,7 @@ public class PathData implements Comparable<PathData> {
   public static PathData[] expandAsGlob(String pattern, Configuration conf)
   throws IOException {
     Path globPath = new Path(pattern);
-    System.out.println("globPath:"+globPath);
+//    System.out.println("globPath:"+globPath);
     
     FileSystem fs = globPath.getFileSystem(conf);  
     
@@ -384,7 +384,7 @@ public class PathData implements Comparable<PathData> {
 		  throws IOException {
 	  		pattern= pattern+"_safe_";	
 		    Path globPath = new Path(pattern);
-		    System.out.println("***************in #expandAsGlob2():globPath:"+globPath);
+//		    System.out.println("***************in #expandAsGlob2():globPath:"+globPath);
 		    
 		    FileSystem fs = globPath.getFileSystem(conf);  
 		    PathData[] items = null;
@@ -394,6 +394,63 @@ public class PathData implements Comparable<PathData> {
 		      // not a glob & file not found, so add the path with a null stat
 		     items = new PathData[]{ new PathData(fs, pattern, null) };
 		     items[0].setStat(null);
+		    return items;
+		  }
+  
+  public static PathData[] expandAsGlob3(String pattern, Configuration conf)
+		  throws IOException {
+		    Path globPath = new Path(pattern);
+//		     System.out.println("globPath:"+globPath);
+		    
+		    FileSystem fs = globPath.getFileSystem(conf);  
+		    
+		    FileStatus[] stats = fs.globStatus(globPath);
+		    PathData[] items = null;
+
+		    if (stats == null) {
+		      // remove any quoting in the glob pattern
+		      pattern = pattern.replaceAll("\\\\(.)", "$1");
+		      // not a glob & file not found, so add the path with a null stat
+		      items = new PathData[]{ new PathData(fs, pattern, null) };
+		    } else {
+		      // figure out what type of glob path was given, will convert globbed
+		      // paths to match the type to preserve relativity
+		      PathType globType;
+		      URI globUri = globPath.toUri();
+		      if (globUri.getScheme() != null) {
+		        globType = PathType.HAS_SCHEME;
+		      } else if (!globUri.getPath().isEmpty() &&
+		                 new Path(globUri.getPath()).isAbsolute()) {
+		        globType = PathType.SCHEMELESS_ABSOLUTE;
+		      } else {
+		        globType = PathType.RELATIVE;
+		      }
+
+		      // convert stats to PathData
+		      items = new PathData[stats.length];
+		      int i=0;
+		      for (FileStatus stat : stats) {
+		        URI matchUri = stat.getPath().toUri();
+		        String globMatch = null;
+		        switch (globType) {
+		          case HAS_SCHEME: // use as-is, but remove authority if necessary
+		            if (globUri.getAuthority() == null) {
+		              matchUri = removeAuthority(matchUri);
+		            }
+		            globMatch = uriToString(matchUri, false);
+		            break;
+		          case SCHEMELESS_ABSOLUTE: // take just the uri's path
+		            globMatch = matchUri.getPath();
+		            break;
+		          case RELATIVE: // make it relative to the current working dir
+		            URI cwdUri = fs.getWorkingDirectory().toUri();
+		            globMatch = relativize(cwdUri, matchUri, stat.isDirectory());
+		            break;
+		        }
+		        items[i++] = new PathData(fs, globMatch, stat);
+		      }
+		    }
+		    Arrays.sort(items);
 		    return items;
 		  }
   //add by kyc end

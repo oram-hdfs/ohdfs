@@ -1848,8 +1848,8 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
 		// get block locations for the file range
 		LocatedBlocks blockLocations = callGetBlockLocations(namenode, src, 0,
 				length);
-		System.out.println("in DFSClient# getFileChecksum()  #blockLocations:"
-				+ blockLocations);
+//		System.out.println("in DFSClient# getFileChecksum()  #blockLocations:"
+//				+ blockLocations);
 		if (null == blockLocations) {
 			throw new FileNotFoundException("File does not exist: " + src);
 		}

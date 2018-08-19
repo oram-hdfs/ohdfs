@@ -327,7 +327,9 @@ public class DFSInputStream extends FSInputStream
     if (locatedBlocks == null || refresh) {
       newInfo = dfsClient.getLocatedBlocks(src, 0);
     }
-  System.out.println("LocatedBlock:"+newInfo);
+  
+    
+    
     DFSClient.LOG.debug("newInfo = {}", newInfo);
     if (newInfo == null) {
       throw new IOException("Cannot open filename " + src);
@@ -343,6 +345,10 @@ public class DFSInputStream extends FSInputStream
       }
     }
     locatedBlocks = newInfo;
+    
+    
+    System.out.println("LocatedBlock:\n"+locatedBlocks.getBlocksInfo());
+    
     long lastBlockBeingWrittenLength = 0;
     if (!locatedBlocks.isLastBlockComplete()) {
       final LocatedBlock last = locatedBlocks.getLastLocatedBlock();

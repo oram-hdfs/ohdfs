@@ -183,4 +183,22 @@ public class LocatedBlocks {
         + "\n  lastLocatedBlock=" + lastLocatedBlock
         + "\n  isLastBlockComplete=" + isLastBlockComplete + "}";
   }
+  
+  public String getBlocksInfo(){
+	  String str ="";
+	  String num="";
+	  for (int i = 0 ;i<blocks.size();i++){
+		  if (i!= blocks.size()-1){
+			  num = String.valueOf(i+1);
+			  str = str +"The "+num+" Block"+": "+blocks.get(i).getExtendBlock()+"\n";
+		  }
+		  
+		  else {
+			  num = String.valueOf(i+1);
+			  str = str +"The "+num+" Block"+": "+blocks.get(i).getExtendBlock();
+		  }
+	  }
+	  
+	  return str;
+  }
 }

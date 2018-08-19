@@ -154,7 +154,7 @@ class Delete {
         try {
 //        	System.out.print("Delete  #moveToTrash() ");
           success = Trash.moveToAppropriateTrash(item.fs, item.path, getConf());
-          System.out.println("conf:"+getConf()+"   success:"+success);
+          //System.out.println("conf:"+getConf()+"   success:"+success);
         } catch(FileNotFoundException fnfe) {
           throw fnfe;
         } catch (IOException ioe) {

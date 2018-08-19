@@ -379,7 +379,7 @@ public class FsShell extends Configured implements Tool {
    */
   public static void main(String argv[]) throws Exception {
 	System.out.println("*********************  Welcome to safe hdfs system *************************");
-	System.out.println("********************* this is desgned by kangyucheng@pku.edu.cn *************************");
+	System.out.println("************ the clien is designed by kangyucheng@pku.edu.cn ***************");
     FsShell shell = newShellInstance();
     Configuration conf = new Configuration();
     conf.setQuietMode(false);

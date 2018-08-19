@@ -18,10 +18,12 @@
 
 package org.apache.hadoop.fs.shell;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -30,6 +32,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -59,7 +62,7 @@ import static org.apache.hadoop.fs.CreateFlag.LAZY_PERSIST;
  */
 abstract class CommandWithDestination extends FsCommand {  
   protected PathData dst;
-  //private boolean overwrite = false;
+  private boolean overwrite = false;
   private boolean verifyChecksum = true;
   private boolean writeChecksum = true;
   private boolean lazyPersist = false;
@@ -67,12 +70,8 @@ abstract class CommandWithDestination extends FsCommand {
   
   //design by kyc
   private boolean safeRead= false;
-  private boolean overwrite = true;
   private boolean safeWrite = false;
   //design by kyc -end
-
-
-
 
 /**
    * The name of the raw xattr namespace. It would be nice to use
@@ -232,17 +231,21 @@ abstract class CommandWithDestination extends FsCommand {
   protected void processArguments(LinkedList<PathData> args)
   throws IOException {
 	 //System.out.println(" **********CommandWithDestination #processArguments()  --kyc");
+
     // if more than one arg, the destination must be a directory
     // if one arg, the dst must not exist or must be a directory
     if (args.size() > 1) {
       if (!dst.exists) {
         throw new PathNotFoundException(dst.toString());
+    	 // System.out.println("in processArguments () !dst.exists");
+        
       }
       if (!dst.stat.isDirectory()) {
         throw new PathIsNotDirectoryException(dst.toString());
       }
     } else if (dst.exists) {
       if (!dst.stat.isDirectory() && !overwrite) {
+    	  
         throw new PathExistsException(dst.toString());
       }
     } else if (!dst.parentExists()) {
@@ -255,7 +258,8 @@ abstract class CommandWithDestination extends FsCommand {
   @Override
   protected void processPathArgument(PathData src)
   throws IOException {
-//	  System.out.println("this is process processPathArgument ,kyc");
+	  //System.out.println("this is process processPathArgument ,kyc");
+	  
     if (src.stat.isDirectory() && src.fs.equals(dst.fs)) {
       PathData target = getTargetPath(src);
       String srcPath = src.fs.makeQualified(src.path).toString();
@@ -304,12 +308,28 @@ abstract class CommandWithDestination extends FsCommand {
       // copy the symlink or deref the symlink
       throw new PathOperationException(src.toString());        
     } else if (src.stat.isFile()) {
-    	copyFileToTarget(src, dst);
     	
+//    	String filename = src.toString();
+//    	if (filename.indexOf("_safe_")!=-1){
+//    		// safe file that need to be cut
+//    		System.out.println("this is a safe file");
+//    		int numberOfDummy = filename.charAt(filename.length()-1)-48;
+//    		copyFileToTarget4(src, dst,numberOfDummy);
+//    	}
+//    	else{
+//    		// do nothing
+//    		
+//    		System.out.println("this is a un safe file");
+//    		copyFileToTarget(src, dst);
+//    	}
     	
       //  added by kangyucheng 
     	// this is for read
+    	
+    	
       if (safeRead){
+    	  
+    	  
       	//System.out.println(" -s is true done by kangyucheng,so we should do safe write or safe read");
       	//System.out.println("we should analys src and dst,so that we can foregy ");
       	
@@ -322,63 +342,232 @@ abstract class CommandWithDestination extends FsCommand {
 //      	System.out.println("src.stat:"+src.stat);
       	
       	try {
+      		//1. we should check if the file in local dummy filepath
       		
-			PathData safe_dst ;	
-      		String dst_pathString = src.toString();
+      		String srcFilePath = "";
+      		//System.out.print("The source file is "+src.toString());
+      		
+      		if (src.existsInLocal){
+      			// 1.1 the file in local,so the srcFilePath is just the src
+      			// what we just need to do is copy it to usre's filePath
+     
+      			copyFileToTarget(src, dst);
+
+      		}
+      		else{
+      			System.out.println("PLEASE WAIT ....");
+      			//1.2 the file is in hdfs,so the srcFilePath
+      			String filename = src.toString();
+          		srcFilePath = DUMMY+filename;
+      			
+      		
+      		
+      				
+      	
+//      		if  (src_items.contains(srcFilePath)){
+//      			// file already exit in local 
+//      			PathData storageForSafesrc = new PathData(new URI(srcFilePath), getConf());
+//      			copyFileToTarget(storageForSafesrc,dst);
+//      		}
+//      		else{
+//      			
+//      		
+          		//2.the source has been set, the destination are going to be set.
+          		//One destination is dummy filePath, the other is user's filePath 
+      		
+          		PathData storageForSafeDst = new PathData(new URI(srcFilePath), getConf());
+          		copyFileToTarget5forCutAddtionFile(src, dst);	
+          		copyFileToTarget5forCutAddtionFile(dst, storageForSafeDst);
+          		//3.we should delete the file we have just read from hdfs 
+          		src.fs.delete(src.path,true);
+          		//4.now we should choose a file in dummy filePath to write to hdfs
+      		
+     
+        		// safe file that need to be cut
+//        		System.out.println("this is a safe file");
+//        		int numberOfDummy = filename.charAt(filename.length()-1)-48;
+        	//	copyFileToTarget4(src, dst,numberOfDummy);
+        		
+//        		copyFileToTarget4(src, storageForSafeDst,numberOfDummy);
+//        	}
+//        	else{
+        		//safe file that need  not to be cut
+        		
+//        		System.out.println("this is a un safe file");
+        	
+        	
+        		
+//        	}			
+//      		String dst_pathString = getReWriteFile();
 //      		System.out.println("safe_dst_pathString"+dst_pathString);
       		// if the path is a glob, then it must match one and only one path
-			PathData[] items = PathData.expandAsGlob2(dst_pathString, getConf());
+      		
+
+        	// the follow is to find dummy file to write to hdfs
+          	// the src_items is the list of dummy file
+        	List<String> src_items = getAllFile(DUMMY,false);
+        	// k is a random integer 
+			int k = (int) (Math.random()* (src_items.size()-1));
+			// choose a file at random
+			String srcpathString = src_items.get(k);
+			System.out.println("The dummy file "+srcpathString+" is selected to write to HDFS");
+			// safe_src is source safe_dst is destination
+			PathData safe_src = new PathData(new URI(srcpathString), getConf());
+			PathData safe_dst ;
+			String[] dstpaths = srcpathString.split("/");
+			String dstpath =dstpaths[dstpaths.length-1];
+			
+			
+			PathData[] items = PathData.expandAsGlob(dstpath, getConf());
 			switch (items.length) {
-				case 0:
-			          throw new PathNotFoundException(dst_pathString);
-			    case 1:
-			    	safe_dst = items[0];
-			        break;
-			    default:
-			    	throw new PathIOException(dst_pathString, "Too many matches");
-			    	}
-	
-//	    	System.out.println("safe_dst.fs:"+safe_dst.fs);
-//	      	System.out.println("safe_dst.path:"+safe_dst.path);
-//	      	System.out.println("safe_dst.stat:"+safe_dst.stat);
-	      	
-	      	
-	      	copyFileToTarget2(src,dst,safe_dst);
+			case 0:
+		          throw new PathNotFoundException("safe Wrong");
+		    case 1:
+		    	safe_dst = items[0];
+		        break;
+		    default:
+		    	throw new PathNotFoundException("safe Wrong");
+		    }
+			// construct a integer at random to build dummy block 
+			int num =(int)(Math.random()*4); 
+			// 5.write the dummy file we just chose
+		    copyFileToTarget2ForAddBlocks(safe_src,safe_dst,num); // in this method the local file was deleted
+		    // 6.delete the file from dummy filePath
+		    safe_src.fs.delete(safe_src.path,false);
+		    
+//			 PathData[] items2 = safe_dst.getDirectoryContents();
+//			 for (PathData item:items2){
+//					System.out.println("int safe read item:"+item);
+//				}
+//			 
+//			 int k = (int) ((items2.length-1)*Math.random());
+//			 safe_dst=items2[k];
+//			 
+//		    	System.out.println("safe_dst.fs:"+safe_dst.fs);
+//		      	System.out.println("safe_dst.path:"+safe_dst.path);
+//		      	System.out.println("safe_dst.stat:"+safe_dst.stat);
+		    System.out.println("The file "+dstpath+" has been written to HDFS");
+     		}
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println("WE DO NOT FINISH TO GET THE FILE --kangyucheng ");
+			//e.printStackTrace();
 		}
-
+      	
       }
       // this is  for write
       else if (safeWrite){
     	  try {
-    	  PathData safe_src ;
-    	  String src_pathString = getDummyFile();
-    	  PathData[] items = PathData.expandAsGlob3(src_pathString, getConf());
-			switch (items.length) {
-				case 0:
-			          throw new PathNotFoundException(src_pathString);
-			    case 1:
-			    	safe_src = items[0];
-			        break;
-			    default:
-			    	throw new PathIOException(src_pathString, "Too many matches");
-			    	}
+    		  System.out.println("PLEASE WAIT ....");
+    		  PathData safe_src ;
+    
+//    	  PathData[] items = PathData.expandAsGlob(".", getConf());
+//    
+//    	  
+//			switch (items.length) {
+//				case 0:
+//			          throw new PathNotFoundException("Wrong write");
+//			    case 1:
+//			    	safe_src = items[0];
+//			        break;
+//			    default:
+//			    	throw new PathNotFoundException("Wrong write1");
+//			    	}
+//			
+//			
+//			 PathData[] items2 = safe_src.getDirectoryContents();
+    		  
+    		  
+    		  //1. we will get all the filePath in HDFS
+    		  PathData[] items2 = getAllDirec(getConf());
+			 
+
+    		  //2.we chose one at random
+    		  int k = (int) ((items2.length-1)*Math.random());
+//			  System.out.println("k is "+k+ " items.length:"+items2.length);
+			  safe_src=items2[k]; 
+			  System.out.println("The file :"+safe_src+" in HDFS  was chose to read");
+			 
 //			System.out.println("safe_src.fs:"+safe_src.fs);
 //	      	System.out.println("safe_src.path:"+safe_src.path);
 //	      	System.out.println("safe_src.stat:"+safe_src.stat);
+			 
+			 
+			  //3.we read it but we do not real write it
+			  copyFileToTarget3readExceptWrite(safe_src,dst);
 	      	
-	      	copyFileToTarget3(src,dst,safe_src);
+	      	
+	      	/// nolmoral 
+//	      	String filename = src.toString();
+//	    	if (filename.indexOf("_safe_")!=-1){
+//	    		// safe file that need to be cut
+//	    		System.out.println("this is a safe file");
+//	    		int numberOfDummy = filename.charAt(filename.length()-1)-48;
+//	    		
+//	    	}
+//	    	else{
+//	    		// do nothing
+	    		
+//	    		System.out.println("this is a un safe file");
+	    		//copyFileToTarget(src, dst);
+//	    		
+	    		//copyFileToTarget5forCutAddtionFile(safe_src,dst);
+//	    	}
+			  
+			  // 4 .check if the file in dummy filePath
+			  String tem = dst.toString();
+			  String srcFilePath =DUMMY+tem;
+			  PathData localFile =null;
+			  try {
+					localFile = new PathData(new URI(srcFilePath), getConf());
+					if (localFile.exists){	
+						localFile.existsInLocal=true;
+					}
+			  //check local end 
+			  } catch (URISyntaxException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+			  }
+			  
+			  if (localFile.existsInLocal){
+				  System.out.println("The File has alread exist in Local,you sholud not put it!!!");
+			  }
+			  else{
+				  int num =(int)(Math.random()*4);  	
+		    	  copyFileToTarget2ForAddBlocks(src,dst,num);
+			  }
+			  
     	  } catch (Exception e) {
   			// TODO Auto-generated catch block
-  			e.printStackTrace();
+    	 System.out.println("WE DO NOT FINISH TO GET THE FILE --kangyucheng ");
+//  			e.printStackTrace();
   		}
     
       }
       else{
-    	  System.out.println("unsafe commond -kyc");
+    	  System.out.println("UNSAFE COMMOND --kangyucheng");
+//      	if (filename.indexOf("_safe_")!=-1){
+      		// safe file that need to be cut
+//      		System.out.println("this is a safe file");
+//      		int numberOfDummy = filename.charAt(filename.length()-1)-48;
+    	  
+    	  try {
+    		  copyFileToTarget5forCutAddtionFile(src, dst);
+		  //check local end 
+		  } catch (Exception e) {
+				// TODO Auto-generated catch block
+			  System.out.println("THERE IS SOMETHING WRONG ! --kangyucheng");
+			 
+//				e.printStackTrace();
+		  }
+//      	}
+//      	else{
+      		// do nothing
+      		
+//      		System.out.println("this is a un safe file");
+//      		copyFileToTarget(src, dst);
+//      	}
       }
        
       //add by kangyucheng  end 
@@ -388,17 +577,64 @@ abstract class CommandWithDestination extends FsCommand {
       throw new PathIsDirectoryException(src.toString());
     }
   }
+  ///////////////////////add by kangyucheng start//////////////////////////////
   /**
-   *  select a file by random in hdfs
-   *  add by kyc
-   *  @return String  
+   *  get all filePath in HDFS
+   *  add by kangyucheng
+   *  @return PathData[]  
    */
-  public static String getDummyFile(){
-	  int i= (int)(Math.random()*10);
-	  String name ="dummy" +String.valueOf(i)+".txt";
-	  return name;
+  public static PathData[] getAllDirec(Configuration con){
+	  PathData safe_src ;
+	    
+	  PathData[] items,items2 = null;
+	  try {
+		  items = PathData.expandAsGlob(".", con);
+		  switch (items.length) {
+		  	  case 0:
+		  		  throw new PathNotFoundException("Wrong write");
+			  case 1:
+				  safe_src = items[0];
+				  break;
+			  default:
+				  throw new PathNotFoundException("Wrong write1");
+	    		}
+	
+		items2 = safe_src.getDirectoryContents(); 
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+	return items2;
+		
   }
-  // add by kyc end
+  /**
+   *  get all filePath Dummy filePath
+   *  add by kangyucheng
+   *  @return List<String>
+   */
+  
+  public static List<String> getAllFile(String directoryPath,boolean isAddDirectory) {
+      List<String> list = new ArrayList<String>();
+      File baseFile = new File(directoryPath);
+      if (baseFile.isFile() || !baseFile.exists()) {
+          return list;
+      }
+      File[] files = baseFile.listFiles();
+      for (File file : files) {
+          if (file.isDirectory()) {
+              if(isAddDirectory){
+                  list.add(file.getAbsolutePath());
+              }
+              list.addAll(getAllFile(file.getAbsolutePath(),isAddDirectory));
+          } else {
+              list.add(file.getAbsolutePath());
+          }
+      }
+      return list;
+  }
+  ///////////////// add by kangyucheng end///////////////////////////////
+  
+  
   @Override
   protected void recursePath(PathData src) throws IOException {
     PathData savedDst = dst;
@@ -454,9 +690,7 @@ abstract class CommandWithDestination extends FsCommand {
       throws IOException {
     final boolean preserveRawXattrs =
         checkPathsForReservedRaw(src.path, target.path);
-    
-   // System.out.println("*************copyFileToTarget, \n src is "+src+"\n target is "+target);
-    
+  
     src.fs.setVerifyChecksum(verifyChecksum);
     InputStream in = null;
     try {
@@ -478,26 +712,26 @@ abstract class CommandWithDestination extends FsCommand {
 	   * add by kangyucheng   
 	   * @throws IOException if copy fails
 	   */ 
-		protected void copyFileToTarget2(PathData src, PathData target,PathData safe_target)
+		protected void copyFileToTarget2ForAddBlocks(PathData src,PathData safe_target,int num)
 	      throws IOException {
 	    final boolean preserveRawXattrs =
-	        checkPathsForReservedRaw(src.path, target.path);
+	        checkPathsForReservedRaw(src.path, safe_target.path);
 	    
 	    //System.out.println("*************copyFileToTarget2, \n src is "+src+"\n target is "+target);
 	    
 	    src.fs.setVerifyChecksum(verifyChecksum);
 	    InputStream in = null;
 	    try {
+	      //System.out.println("src.path"+src.path);
 	      in = src.fs.open(src.path);
-	      copyStreamToTarget2(in, safe_target,src);
-	      
-	      preserveAttributes(src, target, preserveRawXattrs);
+	      copyStreamToTarget2(in, safe_target,num);
+	      preserveAttributes(src, safe_target, preserveRawXattrs);
 	    } finally {
 	      IOUtils.closeStream(in);
 	    }
 	  }
 		
-		protected void copyFileToTarget3(PathData src, PathData target,PathData safe_src)
+		protected void copyFileToTarget3readExceptWrite(PathData safe_src, PathData target)
 			      throws IOException {
 			    final boolean preserveRawXattrs =
 			        checkPathsForReservedRaw(safe_src.path, target.path);
@@ -511,6 +745,43 @@ abstract class CommandWithDestination extends FsCommand {
 			      copyStreamToTarget3(in, target);
 			      
 			      preserveAttributes(safe_src, target, preserveRawXattrs);
+			    } finally {
+			      IOUtils.closeStream(in);
+			    }
+			  }
+//		protected void copyFileToTarget4(PathData src, PathData target,int numberOfDummy)
+//			      throws IOException {
+//			    final boolean preserveRawXattrs =
+//			        checkPathsForReservedRaw(src.path, target.path);
+//			    
+//			   // System.out.println("*************copyFileToTarget, \n src is "+src+"\n target is "+target);
+//			    
+//			    src.fs.setVerifyChecksum(verifyChecksum);
+//			    InputStream in = null;
+//			    try {
+//			      in = src.fs.open(src.path);
+//			      copyStreamToTarget4(in, target,numberOfDummy);
+//			      
+//			      preserveAttributes(src, target, preserveRawXattrs);
+//			    } finally {
+//			      IOUtils.closeStream(in);
+//			    }
+//			  }
+//		
+		protected void copyFileToTarget5forCutAddtionFile(PathData src, PathData target)
+			      throws IOException {
+			    final boolean preserveRawXattrs =
+			        checkPathsForReservedRaw(src.path, target.path);
+			    
+			   // System.out.println("*************copyFileToTarget, \n src is "+src+"\n target is "+target);
+			    
+			    src.fs.setVerifyChecksum(verifyChecksum);
+			    InputStream in = null;
+			    try {
+			      in = src.fs.open(src.path);
+			      copyStreamToTarget5(in, target);
+			      
+			      preserveAttributes(src, target, preserveRawXattrs);
 			    } finally {
 			      IOUtils.closeStream(in);
 			    }
@@ -593,7 +864,8 @@ abstract class CommandWithDestination extends FsCommand {
 
   
   /////////////////////////////add by kyc start//////////////////////
-  /**
+  /**	at org.apache.hadoop.fs.shell.CommandWithDestination.copyStreamToTarget5(CommandWithDestination.java:929)
+
    * If direct write is disabled ,copies the stream contents to a temporary
    * file "<target>._COPYING_". If the copy is
    * successful, the temporary file will be renamed to the real path,
@@ -603,7 +875,7 @@ abstract class CommandWithDestination extends FsCommand {
    * @param target where to store the contents of the stream
    * @throws IOException if copy fails
    */ 
-  protected void copyStreamToTarget2(InputStream in, PathData safe_target,PathData src)
+  protected void copyStreamToTarget2(InputStream in, PathData safe_target,int num)
   throws IOException {
 	//System.out.println("**************copyStreamToTarget()2 by kangyucheng  # start");
     if (safe_target.exists && (safe_target.stat.isDirectory() || !overwrite)) {
@@ -619,7 +891,7 @@ abstract class CommandWithDestination extends FsCommand {
     
       //PathData tempSafe_target = direct ? safe_target : safe_target.suffix("._COPYING_");
       safeTargetFS.setWriteChecksum(writeChecksum);
-      safeTargetFS.writeStreamToFile2(in, lazyPersist, direct,safe_target,src);
+      safeTargetFS.writeStreamToFile2(in, lazyPersist, direct,safe_target,num);
       if (!direct) {
         //targetFs.rename(tempTarget, target);
         //safeTargetFS.rename(tempSafe_target, safe_target);
@@ -662,6 +934,49 @@ abstract class CommandWithDestination extends FsCommand {
 //    System.out.println("**************copyStreamToTarget3() by kangyucheng  # end");
   }
 
+//  protected void copyStreamToTarget4(InputStream in, PathData target,int numberOfDummy)
+//		  throws IOException {
+////			System.out.println("**************copyStreamToTarget3() by kangyucheng  # start");
+//		    if (target.exists && (target.stat.isDirectory() || !overwrite)) {
+//		      throw new PathExistsException(target.toString());
+//		    }
+//		    TargetFileSystem targetFs = new TargetFileSystem(target.fs);
+//		    try {
+//		    	
+////		      System.out.println("copyStreamToTarget3 's try  by kangyucheng");
+//		      //PathData tempTarget = direct ? target : target.suffix("._COPYING_");
+//		      targetFs.setWriteChecksum(writeChecksum);
+//		      targetFs.writeStreamToFile4(in, target, lazyPersist, true,numberOfDummy);
+//		      if (!direct) {
+//		        //targetFs.rename(tempTarget, target);
+//		      }
+//		    } finally {
+//		      targetFs.close(); // last ditch effort to ensure temp file is removed
+//		    }
+////		    System.out.println("**************copyStreamToTarget3() by kangyucheng  # end");
+//		  }
+  
+  protected void copyStreamToTarget5(InputStream in, PathData target)
+  throws IOException {
+	//System.out.println("**************copyStreamToTarget() by kangyucheng  # start");
+    if (target.exists && (target.stat.isDirectory() || !overwrite)) {
+      throw new PathExistsException(target.toString());
+    }
+    TargetFileSystem targetFs = new TargetFileSystem(target.fs);
+    try {
+    	
+     // System.out.println("copyStreamToTarget 's try  by kangyucheng");
+     // PathData tempTarget = direct ? target : target.suffix("._COPYING_");
+      targetFs.setWriteChecksum(writeChecksum);
+      targetFs.writeStreamToFile5(in, target, lazyPersist, true);
+      if (!direct) {
+//        targetFs.rename(tempTarget, target);
+      }
+    } finally {
+      targetFs.close(); // last ditch effort to ensure temp file is removed
+    }
+   // System.out.println("**************copyStreamToTarget() by kangyucheng  # end");
+  }
   
   /////////////////////////////add by kyc end//////////////////////
   /**
@@ -744,7 +1059,7 @@ abstract class CommandWithDestination extends FsCommand {
     ///////////////////////////add by kyc start////////////////////////////////////
 
     void writeStreamToFile2(InputStream in,
-            boolean lazyPersist, boolean direct, PathData safe_target,PathData src)
+            boolean lazyPersist, boolean direct, PathData safe_target,int num)
             throws IOException {
 //        	System.out.println("************TargetFileSystem . # writeStreamToFile2() ");
           //FSDataOutputStream out = null;
@@ -753,18 +1068,18 @@ abstract class CommandWithDestination extends FsCommand {
             //out = create(target, lazyPersist, direct);
       
             safe_out = create(safe_target,lazyPersist, direct);
-            
-            IOUtils.copyBytes2(in,getConf(), true, safe_out);
+           // int num=(int)(Math.random()*5);
+            IOUtils.copyBytes2(in,getConf(), true, safe_out,num);
             
           } finally {
            
         //IOUtils.closeStream(out); // just in case copyBytes didn't
-            
+        	  
            IOUtils.closeStream(safe_out);
-            
-            src.fs.delete(src.path,false);
+           
+//           src.fs.delete(src.path,false);
             // Trash.moveToAppropriateTrash(src.fs, src.path, getConf());
-           safe_target.fs.rename(safe_target.path, src.path);
+          //safe_target.fs.rename(safe_target.path, src.path);
             
           }
         }
@@ -783,6 +1098,44 @@ abstract class CommandWithDestination extends FsCommand {
             //target.fs.delete(target.path,true);
           }
     }
+//    void writeStreamToFile4(InputStream in, PathData target,
+//            boolean lazyPersist, boolean direct,int numberOfDummy)
+//            throws IOException {
+////        	System.out.println("************TargetFileSystem . # writeStreamToFile3() ");
+//          FSDataOutputStream out = null;
+//          try {
+//            //out = create(target, lazyPersist, direct);
+////            System.out.println("in TargetFileSystem() try {} out :" +out);
+//            IOUtils.copyBytes4(in, out, getConf(), true,numberOfDummy);
+//          } finally {
+//             // just in case copyBytes didn't
+//            //add by kyc
+//            PathData temTarget = target;
+//            String p = target.path.toString();
+//            String q = p.substring(0, p.indexOf("_safe_"));
+//            URI uri = PathData.stringToUri(q);
+//            temTarget.path=target.fs.makeQualified(new Path(uri));
+//            target.fs.rename(target.path,temTarget.path );
+//            //add by kyc -end
+//            
+//            IOUtils.closeStream(out);
+//            //target.fs.rename(target, temTarget);
+//          }
+//    }
+    
+    void writeStreamToFile5(InputStream in, PathData target,
+            boolean lazyPersist, boolean direct)
+            throws IOException {
+//        	System.out.println("************TargetFileSystem . # writeStreamToFile() ");
+          FSDataOutputStream out = null;
+          try {
+            out = create(target, lazyPersist, direct);
+//            System.out.println("in TargetFileSystem() try {} out :" +out);
+            IOUtils.copyBytes5(in, out, getConf(), true);
+          } finally {
+            IOUtils.closeStream(out); // just in case copyBytes didn't
+          }
+        }
     ////////////////////////////////////////////add by kyc end///////////////////////////////////
     
     

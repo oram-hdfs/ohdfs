@@ -21,6 +21,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -43,6 +45,7 @@ import org.apache.hadoop.util.StringUtils;
 @InterfaceStability.Evolving
 
 abstract public class Command extends Configured {
+public static final String DUMMY = "/usr/local/hadoop/dummy/";
   /** default name of the command */
   public static String NAME;
   /** the command's usage switches and arguments format */
@@ -222,7 +225,7 @@ abstract public class Command extends Configured {
    */
   protected LinkedList<PathData> expandArguments(LinkedList<String> args)
   throws IOException {
-//	  System.out.println("in Commond # expenfArguments() --kyc start");
+	 // System.out.println("in Commond # expandArguments() --kyc start");
 	  
     LinkedList<PathData> expandedArgs = new LinkedList<PathData>();
     for (String arg : args) {
@@ -244,14 +247,59 @@ abstract public class Command extends Configured {
    * @throws IOException if anything goes wrong...
    */
   protected List<PathData> expandArgument(String arg) throws IOException {
-//	  System.out.println("expandArgument() arg:"+arg+"--kyc start");
+	  // check local  
+//	  String srcFilePath =DUMMY+arg;
+//	  PathData [] result = null ;
+//	  try {
+//		PathData[] localFile = { new PathData(new URI(srcFilePath), getConf())};
+//		if (localFile[0].exists){
+//			System.out.println("wooooooooo!!!!!    we found it in local ");
+//			
+//			result  = localFile;
+//		}
+//		
+//		else{
+//			System.out.println("expandArgument() arg:"+arg+"--kyc start");
+//		    PathData[] items = PathData.expandAsGlob(arg, getConf());
+//		    if (items.length == 0) {
+//		      // it's a glob that failed to match
+//		      throw new PathNotFoundException(arg);
+//		    }
+////		    System.out.println("expandArgument() items:"+items+"--kyc end");
+//		    result=items;
+//		}
+//		
+//		
+//		
+//	} catch (URISyntaxException e) {
+//		// TODO Auto-generated catch block
+//		e.printStackTrace();
+//	}
+//	 System.out.println("in commond result: "+result);
+////	return Arrays.asList(result);
+//	  String srcFilePath =DUMMY+arg;
+//	  try {
+//			PathData localFile = new PathData(new URI(srcFilePath), getConf());
+//			if (localFile.exists){
+//				System.out.println("wooooooooo!!!!!    we found it in local ");
+//
+//			}
+//	  //check local end 
+//	  } catch (URISyntaxException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//	}
+	//System.out.println("expandArgument() arg:"+arg+"--kyc start");
     PathData[] items = PathData.expandAsGlob(arg, getConf());
     if (items.length == 0) {
-      // it's a glob that failed to match
+// it's a glob that failed to match
+    	
+    	// System.out.println("in commond expandArgument() items:"+items+" --kyc  item.length==0");
       throw new PathNotFoundException(arg);
     }
 //    System.out.println("expandArgument() items:"+items+"--kyc end");
     return Arrays.asList(items);
+  
   }
 
   /**
@@ -264,7 +312,7 @@ abstract public class Command extends Configured {
    */
   protected void processArguments(LinkedList<PathData> args)
   throws IOException {
-	//  System.out.println("In Commond processRawArguments() args:"+args);
+	 //System.out.println("In Commond processRawArguments() args:"+args);
     for (PathData arg : args) {
       try {
         processArgument(arg);
@@ -282,12 +330,43 @@ abstract public class Command extends Configured {
    * @throws IOException if anything goes wrong...
    */
   protected void processArgument(PathData item) throws IOException {
-	//  System.out.println(item);
-    if (item.exists) {
-      processPathArgument(item);
-    } else {
-      processNonexistentPath(item);
-    }
+	
+	  //add by kangyucheng   this is to design for  file exist in dummy;
+	  
+	 // System.out.println("in commond processArgument() ");
+	  
+	  if (item.exists){
+		  // System.out.println("The "+item+"exists in HDFS!!!!!!");
+		  // The file exist in HDFS
+		  processPathArgument(item);
+	  }
+	  else{
+		  String tem = item.toString();
+		  String srcFilePath =DUMMY+tem;
+		  PathData localFile =null;
+		  try {
+				localFile = new PathData(new URI(srcFilePath), getConf());
+				if (localFile.exists){	
+					localFile.existsInLocal=true;
+				}
+		  //check local end 
+		  } catch (URISyntaxException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+		  }
+		  
+		  if (localFile.existsInLocal){
+			  System.out.println("The file "+localFile+"exists in Local!!!!!!!");
+			  processPathArgument(localFile);
+		  }
+		  else {
+		    	System.out.println("The file "+localFile+" do not exists ..... orz");
+		        processNonexistentPath(item);
+		  }
+			  
+	  }
+	  
+	  //add by kangyucheng end 
   }
 
   /**
@@ -315,6 +394,7 @@ abstract public class Command extends Configured {
    *  @throws IOException if anything else goes wrong... 
    */
   protected void processNonexistentPath(PathData item) throws IOException {
+	 // System.out.print("in commond , throw Experition");
     throw new PathNotFoundException(item.toString());
   }
 
@@ -330,7 +410,9 @@ abstract public class Command extends Configured {
   throws IOException {
     // TODO: this really should be iterative
 //	  System.out.println("processPaths:parents"+parent);
+	 
     for (PathData item : items) {
+    	//System.out.println("in processPaths"+item);
       try {
         processPath(item);
         if (recursive && isPathRecursable(item)) {

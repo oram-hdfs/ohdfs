@@ -208,11 +208,7 @@ class CopyCommands {
       "files, the destination must be a directory. Passing " +
       "-f overwrites the destination if it already exists and " +
       "-p preserves access and modification times, " +
-      "-s safe read,design by kanghyucheng, " +
-      "-s safe read,design by kanghyucheng, " +
-      "-s safe read,design by kanghyucheng, " +
-      "-s safe read,design by kanghyucheng, " +
-      "-s safe read,design by kanghyucheng, " +
+      "-s safe read in ORAM way,design by kanghyucheng, " +
       "ownership and the mode.\n";
 
     @Override
@@ -252,10 +248,7 @@ class CopyCommands {
       "Flags:\n" +
       "  -p : Preserves access and modification times, ownership and the mode.\n" +
       "  -f : Overwrites the destination if it already exists.\n" +
-      "  -w : excute safe write design by kangyucheng.\n" +
-      "  -w : excute safe write design by kangyucheng.\n" +
-      "  -w : excute safe write design by kangyucheng.\n" +
-      "  -w : excute safe write design by kangyucheng.\n" +
+      "  -w : excute safe write in ORAM way ,design by kangyucheng.\n" +
       "  -l : Allow DataNode to lazily persist the file to disk. Forces\n" +
       "       replication factor of 1. This flag will result in reduced\n" +
       "       durability. Use with care.\n" +

@@ -592,7 +592,7 @@ public abstract class FileSystem extends Configured implements Closeable {
    */
   public static FSDataOutputStream create(FileSystem fs,
       Path file, FsPermission permission) throws IOException {
-	System.out.println("");
+
     // create the file with default permission
     FSDataOutputStream out = fs.create(file);
     // set its permission to the supplied one

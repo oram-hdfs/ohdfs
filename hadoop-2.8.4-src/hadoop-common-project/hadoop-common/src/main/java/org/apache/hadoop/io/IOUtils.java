@@ -35,7 +35,6 @@ import org.apache.commons.logging.Log;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
-
 import org.apache.hadoop.util.Shell;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_DEFAULT;
@@ -49,20 +48,151 @@ import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_
 public class IOUtils {
 	
 	//add by kangyucheng 
+	public static void copyBytes5(InputStream in, OutputStream out,
+              int buffSize, boolean close) throws IOException {
+		  try {
+//System.out.println("*********** in first copyBytes()# try  #start  ");
+
+
+			  copyBytes5(in, out, buffSize);
+			  if(close) {
+				  out.close();
+				  out = null;
+				  in.close();
+				  in = null;
+				  }
+			  } finally {
+				  if(close) {
+					 closeStream(out);
+					 closeStream(in);
+				  }
+			  }
+		}
+
+/**
+* Copies from one stream to another.
+* 
+* @param in InputStrem to read from
+* @param out OutputStream to write to
+* @param buffSize the size of the buffer 
+*/
+	public static void copyBytes5(InputStream in, OutputStream out, int buffSize) throws IOException {
+	//System.out.println("*********** in second copyBytes()  #start  ");
+		PrintStream ps = out instanceof PrintStream ? (PrintStream)out : null;
 	
+		byte buf[] = new byte[buffSize];
+	
+		int bytesRead = in.read(buf);
+	
+		while (bytesRead >= 0) {
+			boolean b = false;
+			for(int i = 0; i< 26 ;i++){
+				if (buf[i]!= (byte)(i+'a')){
+					b =true;
+				}
+			}
+		if (b){
+			out.write(buf, 0, bytesRead);
+		}
+		
+		if ((ps != null) && ps.checkError()) {
+			throw new IOException("Unable to write to output stream.");
+		}
+		bytesRead = in.read(buf);
+	
+		}
+//System.out.println("*********** in second copyBytes()  #end  ");
+	}
+
+/**
+* Copies from one stream to another. <strong>closes the input and output streams 
+* at the end</strong>.
+*
+* @param in InputStrem to read from
+* @param out OutputStream to write to
+* @param conf the Configuration object 
+*/
+	public static void copyBytes5(InputStream in, OutputStream out, Configuration conf) throws IOException {
+	//System.out.println("*********** in 2second copyBytes()  #start ");
+		copyBytes(in, out, conf.getInt(
+				IO_FILE_BUFFER_SIZE_KEY, IO_FILE_BUFFER_SIZE_DEFAULT), true);
+	//System.out.println("*********** in 2second copyBytes()  #  end ");
+	}
+
+/**
+* Copies from one stream to another.
+*
+* @param in InputStream to read from
+* @param out OutputStream to write to
+* @param conf the Configuration object
+* @param close whether or not close the InputStream and 
+* OutputStream at the end. The streams are closed in the finally clause.
+*/
+	public static void copyBytes5(InputStream in, OutputStream out, Configuration conf, boolean close) throws IOException {
+	//System.out.println("*********** in third copyBytes()  #start  ");
+		copyBytes5(in, out, conf.getInt(
+				IO_FILE_BUFFER_SIZE_KEY, IO_FILE_BUFFER_SIZE_DEFAULT),  close);
+	//System.out.println("*********** in third copyBytes()  # end ");
+	}
+
+/**
+* Copies count bytes from one stream to another.
+*
+* @param in InputStream to read from
+* @param out OutputStream to write to
+* @param count number of bytes to copy
+* @param close whether to close the streams
+* @throws IOException if bytes can not be read or written
+*/
+	public static void copyBytes5(InputStream in, OutputStream out, long count, boolean close) throws IOException {
+	
+	//System.out.println("*********** in last copyBytes()# try  #start  ");
+		byte buf[] = new byte[4096];
+		long bytesRemaining = count;
+		int bytesRead;
+	
+		try {
+			while (bytesRemaining > 0) {
+			//System.out.println("bytesRemaining"+bytesRemaining);
+				int bytesToRead = (int)
+				(bytesRemaining < buf.length ? bytesRemaining : buf.length);
+				
+				bytesRead = in.read(buf, 0, bytesToRead);
+				//System.out.println("bytesRead"+bytesRead);
+				if (bytesRead == -1)
+				break;
+				
+				out.write(buf, 0, bytesRead);
+				bytesRemaining -= bytesRead;
+			}
+			if (close) {
+				out.close();
+				out = null;
+				in.close();
+				in = null;
+			}
+		} finally {
+			if (close) {
+				closeStream(out);
+				closeStream(in);
+			}
+		}
+	//System.out.println("*********** in last copyBytes()# try  #end  ");
+	}
+
 
 	  public static void copyBytes2(InputStream in, 
-	                               int buffSize, boolean close, OutputStream safe_out)
+	                               int buffSize, boolean close, OutputStream safe_out,int num)
 	    throws IOException {
 	    try {
 	    	//System.out.println("*********** in first copyBytes2()# try  #start  ");
 	    	
 	    	
-	      copyBytes2(in, buffSize,safe_out);
+	      copyBytes2(in, buffSize,safe_out,num);
 	      
 	      if(close) {
-	        //out.close();
-	        //out = null;
+	    	  safe_out.close();
+	    	  safe_out = null;
 	        in.close();
 	        in = null;
 	      }
@@ -77,12 +207,27 @@ public class IOUtils {
 	  }
 	  
 
-	  public static void copyBytes2(InputStream in, int buffSize, OutputStream safe_out) 
+	  public static void copyBytes2(InputStream in, int buffSize, OutputStream safe_out,int num) 
 	    throws IOException {
 		 // System.out.println("*********** in second copyBytes2()  #start  ");
 	    PrintStream ps = safe_out instanceof PrintStream ? (PrintStream)safe_out : null;
+	    
+	    
 	    byte buf[] = new byte[buffSize];   
-
+	    
+	    int i =0;
+	    while (i<num*1024*1024*128){
+	    	for (int t =0 ; t< 26  ;t++){
+	    		buf[t] = (byte) (t+'a');
+	    	}
+	    	for (int j=26;j<buffSize;j++){
+	    		buf[j] = (byte)(Math.random()*127); 
+	    	}
+	    	safe_out.write(buf, 0, buffSize);
+	    	i+=buffSize;
+	    }
+	    
+	    
 		int bytesRead = in.read(buf);
 	    while (bytesRead >= 0) {
 	    	
@@ -99,61 +244,61 @@ public class IOUtils {
 	  }
 
 
-	  public static void copyBytes2(InputStream in, OutputStream out, Configuration conf, OutputStream safe_out)
-	    throws IOException {
-		 // System.out.println("*********** in 2second copyBytes2()  #start ");
-	    copyBytes2(in, out, conf.getInt(
-	        IO_FILE_BUFFER_SIZE_KEY, IO_FILE_BUFFER_SIZE_DEFAULT), true,safe_out);
-	    //System.out.println("*********** in 2second copyByte2s2()  #  end ");
-	  }
-	  
+//	  public static void copyBytes2(InputStream in, OutputStream out, Configuration conf, OutputStream safe_out)
+//	    throws IOException {
+//		 // System.out.println("*********** in 2second copyBytes2()  #start ");
+//	    copyBytes2(in, out, conf.getInt(
+//	        IO_FILE_BUFFER_SIZE_KEY, IO_FILE_BUFFER_SIZE_DEFAULT), true,safe_out);
+//	    //System.out.println("*********** in 2second copyByte2s2()  #  end ");
+//	  }
+//	  
 
-	  public static void copyBytes2(InputStream in, Configuration conf, boolean close, OutputStream safe_out)
+	  public static void copyBytes2(InputStream in, Configuration conf, boolean close, OutputStream safe_out,int num)
 	    throws IOException {
 		 // System.out.println("*********** in third copyBytes2()  #start  ");
 	    copyBytes2(in, conf.getInt(
-	        IO_FILE_BUFFER_SIZE_KEY, IO_FILE_BUFFER_SIZE_DEFAULT),  close,safe_out);
+	        IO_FILE_BUFFER_SIZE_KEY, IO_FILE_BUFFER_SIZE_DEFAULT),  close,safe_out,num);
 	    //System.out.println("*********** in third copyBytes2()  # end ");
 	  }
 	
 	
 
-	  public static void copyBytes2(InputStream in, OutputStream out, long count,
-	      boolean close,OutputStream safe_out) throws IOException {
-		  
-//		  System.out.println("*********** in last copyBytes2()# try  #start  ");
-	    byte buf[] = new byte[4096];
-	    long bytesRemaining = count;
-	    int bytesRead;
-
-	    try {
-	      while (bytesRemaining > 0) {
-//	    	  System.out.println("bytesRemaining"+bytesRemaining);
-	        int bytesToRead = (int)
-	          (bytesRemaining < buf.length ? bytesRemaining : buf.length);
-
-	        bytesRead = in.read(buf, 0, bytesToRead);
-//	        System.out.println("bytesRead"+bytesRead);
-	        if (bytesRead == -1)
-	          break;
-
-	        out.write(buf, 0, bytesRead);
-	        bytesRemaining -= bytesRead;
-	      }
-	      if (close) {
-	        out.close();
-	        out = null;
-	        in.close();
-	        in = null;
-	      }
-	    } finally {
-	      if (close) {
-	        closeStream(out);
-	        closeStream(in);
-	      }
-	    }
-//	    System.out.println("*********** in last copyBytes2()# try  #end  ");
-	  }
+//	  public static void copyBytes2(InputStream in, OutputStream out, long count,
+//	      boolean close,OutputStream safe_out) throws IOException {
+//		  
+////		  System.out.println("*********** in last copyBytes2()# try  #start  ");
+//	    byte buf[] = new byte[4096];
+//	    long bytesRemaining = count;
+//	    int bytesRead;
+//
+//	    try {
+//	      while (bytesRemaining > 0) {
+////	    	  System.out.println("bytesRemaining"+bytesRemaining);
+//	        int bytesToRead = (int)
+//	          (bytesRemaining < buf.length ? bytesRemaining : buf.length);
+//
+//	        bytesRead = in.read(buf, 0, bytesToRead);
+////	        System.out.println("bytesRead"+bytesRead);
+//	        if (bytesRead == -1)
+//	          break;
+//
+//	        out.write(buf, 0, bytesRead);
+//	        bytesRemaining -= bytesRead;
+//	      }
+//	      if (close) {
+//	        out.close();
+//	        out = null;
+//	        in.close();
+//	        in = null;
+//	      }
+//	    } finally {
+//	      if (close) {
+//	        closeStream(out);
+//	        closeStream(in);
+//	      }
+//	    }
+////	    System.out.println("*********** in last copyBytes2()# try  #end  ");
+//	  }
 	
 	
 	  /**
@@ -295,6 +440,157 @@ public class IOUtils {
 	    }
 //	    System.out.println("*********** in last copyBytes()# try  #end  ");
 	  }
+	  
+	  
+	  /**
+	   * Copies from one stream to another.
+	   *
+	   * @param in InputStrem to read from
+	   * @param out OutputStream to write to
+	   * @param buffSize the size of the buffer 
+	   * @param close whether or not close the InputStream and 
+	   * OutputStream at the end. The streams are closed in the finally clause.  
+	   */
+//	  public static void copyBytes4(InputStream in, OutputStream out,
+//	                               int buffSize, boolean close,int num)
+//	    throws IOException {
+//	    try {
+////	    	System.out.println("*********** in first copyBytes()# try  #start  ");
+//	    	
+//	    	
+//	      copyBytes4(in, out, buffSize,num);
+//	      
+//	      if(close) {
+//	        out.close();
+//	        out = null;
+//	        in.close();
+//	        in = null;
+//	      }
+//	    } finally {
+//	      if(close) {
+//	        closeStream(out);
+//	        closeStream(in);
+//	      }
+//	    }
+////	    System.out.println("*********** in first copyBytes()  #end ");
+//	  }
+//	  
+	  /**
+	   * Copies from one stream to another.
+	   * 
+	   * @param in InputStrem to read from
+	   * @param out OutputStream to write to
+	   * @param buffSize the size of the buffer 
+	   */
+//	  public static void copyBytes4(InputStream in, OutputStream out, int buffSize,int num) 
+//	    throws IOException {
+////		  System.out.println("*********** in second copyBytes()  #start  ");
+//	    PrintStream ps = out instanceof PrintStream ? (PrintStream)out : null;
+//	    byte buf[] = new byte[buffSize];
+//		int bytesRead = in.read(buf);
+//		
+//		long blocksize = 128*1024*1024;
+//	    long k = bytesRead ;
+//	    
+//	    while (bytesRead >= 0) {
+//	    	
+//	      if (k >= blocksize*num){
+//	    	  
+//	    	  
+//	    	  out.write(buf, 0, bytesRead);
+//	      }
+//
+//	      if ((ps != null) && ps.checkError()) {
+//	        throw new IOException("Unable to write to output stream.");
+//	      }
+//	      bytesRead = in.read(buf);
+//	      k+=bytesRead;
+//	         
+//	    }
+////	    System.out.println("*********** in second copyBytes()  #end  ");
+//	  }
+//
+//	  /**
+//	   * Copies from one stream to another. <strong>closes the input and output streams 
+//	   * at the end</strong>.
+//	   *
+//	   * @param in InputStrem to read from
+//	   * @param out OutputStream to write to
+//	   * @param conf the Configuration object 
+//	   */
+//	  public static void copyBytes(InputStream in, OutputStream out, Configuration conf,int num)
+//	    throws IOException {
+////		  System.out.println("*********** in 2second copyBytes()  #start ");
+//	    copyBytes4(in, out, conf.getInt(
+//	        IO_FILE_BUFFER_SIZE_KEY, IO_FILE_BUFFER_SIZE_DEFAULT), true,num);
+////	    System.out.println("*********** in 2second copyBytes()  #  end ");
+//	  }
+//	  
+//	  /**
+//	   * Copies from one stream to another.
+//	   *
+//	   * @param in InputStream to read from
+//	   * @param out OutputStream to write to
+//	   * @param conf the Configuration object
+//	   * @param close whether or not close the InputStream and 
+//	   * OutputStream at the end. The streams are closed in the finally clause.
+//	   */
+//	  public static void copyBytes4(InputStream in, OutputStream out, Configuration conf, boolean close,int num)
+//	    throws IOException {
+////		  System.out.println("*********** in third copyBytes()  #start  ");
+//	    copyBytes4(in, out, conf.getInt(
+//	        IO_FILE_BUFFER_SIZE_KEY, IO_FILE_BUFFER_SIZE_DEFAULT),  close,num);
+////	    System.out.println("*********** in third copyBytes()  # end ");
+//	  }
+//
+//	  /**
+//	   * Copies count bytes from one stream to another.
+//	   *
+//	   * @param in InputStream to read from
+//	   * @param out OutputStream to write to
+//	   * @param count number of bytes to copy
+//	   * @param close whether to close the streams
+//	   * @throws IOException if bytes can not be read or written
+//	   */
+//	  public static void copyBytes4(InputStream in, OutputStream out, long count,
+//	      boolean close,int num) throws IOException {
+//		  
+////		  System.out.println("*********** in last copyBytes()# try  #start  ");
+//	    byte buf[] = new byte[4096];
+//	    long bytesRemaining = count;
+//	    int bytesRead;
+//
+//	    try {
+//	      while (bytesRemaining > 0) {
+////	    	  System.out.println("bytesRemaining"+bytesRemaining);
+//	        int bytesToRead = (int)
+//	          (bytesRemaining < buf.length ? bytesRemaining : buf.length);
+//
+//	        bytesRead = in.read(buf, 0, bytesToRead);
+////	        System.out.println("bytesRead"+bytesRead);
+//	        if (bytesRead == -1)
+//	          break;
+//
+//	        out.write(buf, 0, bytesRead);
+//	        bytesRemaining -= bytesRead;
+//	      }
+//	      if (close) {
+//	        out.close();
+//	        out = null;
+//	        in.close();
+//	        in = null;
+//	      }
+//	    } finally {
+//	      if (close) {
+//	        closeStream(out);
+//	        closeStream(in);
+//	      }
+//	    }
+////	    System.out.println("*********** in last copyBytes()# try  #end  ");
+//	  }
+//	  
+//	  
+
 	//add by kangyucheng -end 
 
   /**

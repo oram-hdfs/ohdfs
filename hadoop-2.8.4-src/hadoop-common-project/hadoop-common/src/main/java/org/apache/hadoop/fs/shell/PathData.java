@@ -51,10 +51,12 @@ import org.apache.hadoop.fs.PathNotFoundException;
 public class PathData implements Comparable<PathData> {
   protected final URI uri;
   public final FileSystem fs;
-  public final Path path;
+  public  Path path;
   public FileStatus stat;
   public boolean exists;
 
+  // add by kyc
+  public boolean existsInLocal;// existsInLocal  is a flag to sign if the file exist in local; 
   
   /* True if the URI scheme was not present in the pathString but inferred.
    */
@@ -182,6 +184,7 @@ public class PathData implements Comparable<PathData> {
   private void setStat(FileStatus stat) {
     this.stat = stat;
     exists = (stat != null);
+    //exists = true;
   }
 
   /**
@@ -272,9 +275,12 @@ public class PathData implements Comparable<PathData> {
     for (int i=0; i < stats.length; i++) {
       // preserve relative paths
       String child = getStringForChildPath(stats[i].getPath());
+      //System.out.println("in PathData() child:"+child);
       items[i] = new PathData(fs, child, stats[i]);
+      
     }
     Arrays.sort(items);
+    
     return items;
   }
 
@@ -324,7 +330,7 @@ public class PathData implements Comparable<PathData> {
   public static PathData[] expandAsGlob(String pattern, Configuration conf)
   throws IOException {
     Path globPath = new Path(pattern);
-//    System.out.println("globPath:"+globPath);
+    //System.out.println("int PathData # globPath:"+globPath);
     
     FileSystem fs = globPath.getFileSystem(conf);  
     
@@ -379,83 +385,144 @@ public class PathData implements Comparable<PathData> {
   }
   
 //add by kyc start 
-  
-  public static PathData[] expandAsGlob2(String pattern, Configuration conf)
-		  throws IOException {
-	  		pattern= pattern+"_safe_";	
-		    Path globPath = new Path(pattern);
-//		    System.out.println("***************in #expandAsGlob2():globPath:"+globPath);
-		    
-		    FileSystem fs = globPath.getFileSystem(conf);  
-		    PathData[] items = null;
-		    
-		      // remove any quoting in the glob pattern
-		      pattern = pattern.replaceAll("\\\\(.)", "$1");
-		      // not a glob & file not found, so add the path with a null stat
-		     items = new PathData[]{ new PathData(fs, pattern, null) };
-		     items[0].setStat(null);
-		    return items;
-		  }
-  
-  public static PathData[] expandAsGlob3(String pattern, Configuration conf)
-		  throws IOException {
-		    Path globPath = new Path(pattern);
-//		     System.out.println("globPath:"+globPath);
-		    
-		    FileSystem fs = globPath.getFileSystem(conf);  
-		    
-		    FileStatus[] stats = fs.globStatus(globPath);
-		    PathData[] items = null;
-
-		    if (stats == null) {
-		      // remove any quoting in the glob pattern
-		      pattern = pattern.replaceAll("\\\\(.)", "$1");
-		      // not a glob & file not found, so add the path with a null stat
-		      items = new PathData[]{ new PathData(fs, pattern, null) };
-		    } else {
-		      // figure out what type of glob path was given, will convert globbed
-		      // paths to match the type to preserve relativity
-		      PathType globType;
-		      URI globUri = globPath.toUri();
-		      if (globUri.getScheme() != null) {
-		        globType = PathType.HAS_SCHEME;
-		      } else if (!globUri.getPath().isEmpty() &&
-		                 new Path(globUri.getPath()).isAbsolute()) {
-		        globType = PathType.SCHEMELESS_ABSOLUTE;
-		      } else {
-		        globType = PathType.RELATIVE;
-		      }
-
-		      // convert stats to PathData
-		      items = new PathData[stats.length];
-		      int i=0;
-		      for (FileStatus stat : stats) {
-		        URI matchUri = stat.getPath().toUri();
-		        String globMatch = null;
-		        switch (globType) {
-		          case HAS_SCHEME: // use as-is, but remove authority if necessary
-		            if (globUri.getAuthority() == null) {
-		              matchUri = removeAuthority(matchUri);
-		            }
-		            globMatch = uriToString(matchUri, false);
-		            break;
-		          case SCHEMELESS_ABSOLUTE: // take just the uri's path
-		            globMatch = matchUri.getPath();
-		            break;
-		          case RELATIVE: // make it relative to the current working dir
-		            URI cwdUri = fs.getWorkingDirectory().toUri();
-		            globMatch = relativize(cwdUri, matchUri, stat.isDirectory());
-		            break;
-		        }
-		        items[i++] = new PathData(fs, globMatch, stat);
-		      }
-		    }
-		    Arrays.sort(items);
-		    return items;
-		  }
+//  
+//  public static PathData[] expandAsGlob2(String pattern, Configuration conf)
+//		  throws IOException {
+//	  		pattern= pattern+"_safe_";	
+//		    Path globPath = new Path(pattern);
+////		    System.out.println("***************in #expandAsGlob2():globPath:"+globPath);
+//		    
+//		    FileSystem fs = globPath.getFileSystem(conf);  
+//		    PathData[] items = null;
+//		    
+//		      // remove any quoting in the glob pattern
+//		      pattern = pattern.replaceAll("\\\\(.)", "$1");
+//		      // not a glob & file not found, so add the path with a null stat
+//		     items = new PathData[]{ new PathData(fs, pattern, null) };
+//		     items[0].setStat(null);
+//		    return items;
+//		  }
+//  
+//  public static PathData[] expandAsGlob3(String pattern, Configuration conf)
+//		  throws IOException {
+//		    
+//		    pattern= pattern+"_safe_";	
+//		    
+//		    Path globPath = new Path(pattern);
+//		    //System.out.println("in expandAsGlob3()  globPath:"+globPath);
+//		    
+//		    FileSystem fs = globPath.getFileSystem(conf);  
+//		    
+//		    FileStatus[] stats = fs.globStatus(globPath);
+//		    PathData[] items = null;
+//
+//		    if (stats == null) {
+//		      // remove any quoting in the glob pattern
+//		      pattern = pattern.replaceAll("\\\\(.)", "$1");
+//		      // not a glob & file not found, so add the path with a null stat
+//		      items = new PathData[]{ new PathData(fs, pattern, null) };
+//		    } else {
+//		      // figure out what type of glob path was given, will convert globbed
+//		      // paths to match the type to preserve relativity
+//		      PathType globType;
+//		      URI globUri = globPath.toUri();
+//		      if (globUri.getScheme() != null) {
+//		        globType = PathType.HAS_SCHEME;
+//		      } else if (!globUri.getPath().isEmpty() &&
+//		                 new Path(globUri.getPath()).isAbsolute()) {
+//		        globType = PathType.SCHEMELESS_ABSOLUTE;
+//		      } else {
+//		        globType = PathType.RELATIVE;
+//		      }
+//
+//		      // convert stats to PathData
+//		      items = new PathData[stats.length];
+//		      int i=0;
+//		      for (FileStatus stat : stats) {
+//		        URI matchUri = stat.getPath().toUri();
+//		        String globMatch = null;
+//		        switch (globType) {
+//		          case HAS_SCHEME: // use as-is, but remove authority if necessary
+//		            if (globUri.getAuthority() == null) {
+//		              matchUri = removeAuthority(matchUri);
+//		            }
+//		            globMatch = uriToString(matchUri, false);
+//		            break;
+//		          case SCHEMELESS_ABSOLUTE: // take just the uri's path
+//		            globMatch = matchUri.getPath();
+//		            break;
+//		          case RELATIVE: // make it relative to the current working dir
+//		            URI cwdUri = fs.getWorkingDirectory().toUri();
+//		            globMatch = relativize(cwdUri, matchUri, stat.isDirectory());
+//		            break;
+//		        }
+//		        items[i++] = new PathData(fs, globMatch, stat);
+//		      }
+//		    }
+//		    Arrays.sort(items);
+//		    return items;
+//		  }
   //add by kyc end
   
-  
+//  public static PathData[] expandAsGlob4(String pattern, Configuration conf,int num)
+//		  throws IOException {
+//		    
+//		 
+//		    
+//		    Path globPath = new Path(pattern);
+//		    //System.out.println("in expandAsGlob4()  globPath:"+globPath);
+//		    
+//		    FileSystem fs = globPath.getFileSystem(conf);  
+//		    
+//		    FileStatus[] stats = fs.globStatus(globPath);
+//		    PathData[] items = null;
+//
+//		    if (stats == null) {
+//		      // remove any quoting in the glob pattern
+//		      pattern = pattern.replaceAll("\\\\(.)", "$1");
+//		      // not a glob & file not found, so add the path with a null stat
+//		      items = new PathData[]{ new PathData(fs, pattern, null) };
+//		    } else {
+//		      // figure out what type of glob path was given, will convert globbed
+//		      // paths to match the type to preserve relativity
+//		      PathType globType;
+//		      URI globUri = globPath.toUri();
+//		      if (globUri.getScheme() != null) {
+//		        globType = PathType.HAS_SCHEME;
+//		      } else if (!globUri.getPath().isEmpty() &&
+//		                 new Path(globUri.getPath()).isAbsolute()) {
+//		        globType = PathType.SCHEMELESS_ABSOLUTE;
+//		      } else {
+//		        globType = PathType.RELATIVE;
+//		      }
+//
+//		      // convert stats to PathData
+//		      items = new PathData[stats.length];
+//		      int i=0;
+//		      for (FileStatus stat : stats) {
+//		        URI matchUri = stat.getPath().toUri();
+//		        String globMatch = null;
+//		        switch (globType) {
+//		          case HAS_SCHEME: // use as-is, but remove authority if necessary
+//		            if (globUri.getAuthority() == null) {
+//		              matchUri = removeAuthority(matchUri);
+//		            }
+//		            globMatch = uriToString(matchUri, false);
+//		            break;
+//		          case SCHEMELESS_ABSOLUTE: // take just the uri's path
+//		            globMatch = matchUri.getPath();
+//		            break;
+//		          case RELATIVE: // make it relative to the current working dir
+//		            URI cwdUri = fs.getWorkingDirectory().toUri();
+//		            globMatch = relativize(cwdUri, matchUri, stat.isDirectory());
+//		            break;
+//		        }
+//		        items[i++] = new PathData(fs, globMatch, stat);
+//		      }
+//		    }
+//		    Arrays.sort(items);
+//		    return items;
+//		  }
   private static URI removeAuthority(URI uri) {
     try {
       uri = new URI(
@@ -602,55 +669,98 @@ public class PathData implements Comparable<PathData> {
     return pathString;
   }
 
+  
+  
   /** Construct a URI from a String with unescaped special characters
    *  that have non-standard semantics. e.g. /, ?, #. A custom parsing
    *  is needed to prevent misbehavior.
    *  @param pathString The input path in string form
    *  @return URI
    */
-  private static URI stringToUri(String pathString) throws IOException {
-    // We can't use 'new URI(String)' directly. Since it doesn't do quoting
-    // internally, the internal parser may fail or break the string at wrong
-    // places. Use of multi-argument ctors will quote those chars for us,
-    // but we need to do our own parsing and assembly.
-    
-    // parse uri components
-    String scheme = null;
-    String authority = null;
-    int start = 0;
+//  private static URI stringToUri(String pathString) throws IOException {
+//    // We can't use 'new URI(String)' directly. Since it doesn't do quoting
+//    // internally, the internal parser may fail or break the string at wrong
+//    // places. Use of multi-argument ctors will quote those chars for us,
+//    // but we need to do our own parsing and assembly.
+//    
+//    // parse uri components
+//    String scheme = null;
+//    String authority = null;
+//    int start = 0;
+//
+//    pathString = normalizeWindowsPath(pathString);
+//
+//    // parse uri scheme, if any
+//    int colon = pathString.indexOf(':');
+//    int slash = pathString.indexOf('/');
+//    if (colon > 0 && (slash == colon +1)) {
+//      // has a non zero-length scheme
+//      scheme = pathString.substring(0, colon);
+//      start = colon + 1;
+//    }
+//
+//    // parse uri authority, if any
+//    if (pathString.startsWith("//", start) &&
+//        (pathString.length()-start > 2)) {
+//      start += 2;
+//      int nextSlash = pathString.indexOf('/', start);
+//      int authEnd = nextSlash > 0 ? nextSlash : pathString.length();
+//      authority = pathString.substring(start, authEnd);
+//      start = authEnd;
+//    }
+//    // uri path is the rest of the string. ? or # are not interpreted,
+//    // but any occurrence of them will be quoted by the URI ctor.
+//    String path = pathString.substring(start, pathString.length());
+//
+//    // Construct the URI
+//    try {
+//      return new URI(scheme, authority, path, null, null);
+//    } catch (URISyntaxException e) {
+//      throw new IllegalArgumentException(e);
+//    }
+//  }
+  public static URI stringToUri(String pathString) throws IOException {
+	    // We can't use 'new URI(String)' directly. Since it doesn't do quoting
+	    // internally, the internal parser may fail or break the string at wrong
+	    // places. Use of multi-argument ctors will quote those chars for us,
+	    // but we need to do our own parsing and assembly.
+	    
+	    // parse uri components
+	    String scheme = null;
+	    String authority = null;
+	    int start = 0;
 
-    pathString = normalizeWindowsPath(pathString);
+	    pathString = normalizeWindowsPath(pathString);
 
-    // parse uri scheme, if any
-    int colon = pathString.indexOf(':');
-    int slash = pathString.indexOf('/');
-    if (colon > 0 && (slash == colon +1)) {
-      // has a non zero-length scheme
-      scheme = pathString.substring(0, colon);
-      start = colon + 1;
-    }
+	    // parse uri scheme, if any
+	    int colon = pathString.indexOf(':');
+	    int slash = pathString.indexOf('/');
+	    if (colon > 0 && (slash == colon +1)) {
+	      // has a non zero-length scheme
+	      scheme = pathString.substring(0, colon);
+	      start = colon + 1;
+	    }
 
-    // parse uri authority, if any
-    if (pathString.startsWith("//", start) &&
-        (pathString.length()-start > 2)) {
-      start += 2;
-      int nextSlash = pathString.indexOf('/', start);
-      int authEnd = nextSlash > 0 ? nextSlash : pathString.length();
-      authority = pathString.substring(start, authEnd);
-      start = authEnd;
-    }
-    // uri path is the rest of the string. ? or # are not interpreted,
-    // but any occurrence of them will be quoted by the URI ctor.
-    String path = pathString.substring(start, pathString.length());
+	    // parse uri authority, if any
+	    if (pathString.startsWith("//", start) &&
+	        (pathString.length()-start > 2)) {
+	      start += 2;
+	      int nextSlash = pathString.indexOf('/', start);
+	      int authEnd = nextSlash > 0 ? nextSlash : pathString.length();
+	      authority = pathString.substring(start, authEnd);
+	      start = authEnd;
+	    }
+	    // uri path is the rest of the string. ? or # are not interpreted,
+	    // but any occurrence of them will be quoted by the URI ctor.
+	    String path = pathString.substring(start, pathString.length());
 
-    // Construct the URI
-    try {
-      return new URI(scheme, authority, path, null, null);
-    } catch (URISyntaxException e) {
-      throw new IllegalArgumentException(e);
-    }
-  }
-
+	    // Construct the URI
+	    try {
+	      return new URI(scheme, authority, path, null, null);
+	    } catch (URISyntaxException e) {
+	      throw new IllegalArgumentException(e);
+	    }
+	  }
   @Override
   public int compareTo(PathData o) {
     return path.compareTo(o.path);

@@ -61,7 +61,11 @@ public class IOUtils {
                                int buffSize, boolean close)
     throws IOException {
     try {
+    	System.out.println("*********** in first copyBytes()# try  #start  ");
+    	
+    	
       copyBytes(in, out, buffSize);
+      
       if(close) {
         out.close();
         out = null;
@@ -74,6 +78,7 @@ public class IOUtils {
         closeStream(in);
       }
     }
+    System.out.println("*********** in first copyBytes()  #end ");
   }
   
   /**
@@ -85,16 +90,56 @@ public class IOUtils {
    */
   public static void copyBytes(InputStream in, OutputStream out, int buffSize) 
     throws IOException {
+	  System.out.println("*********** in second copyBytes()  #start  ");
     PrintStream ps = out instanceof PrintStream ? (PrintStream)out : null;
     byte buf[] = new byte[buffSize];
-    int bytesRead = in.read(buf);
+
+//    DFSInputStream din= (DFSInputStream)in;
+//	System.out.print("getBlockEnd()--->"+din.getBlockEnd()+"  getPos()--->"+din.getPos());
+//	System.out.println("  getCurrentNode-->"+din.getCurrentNode());
+    
+    //add by kangyucheng start
+	int blocksize=128*1024*1024;
+	int count =0;
+	byte oneBlock[] = new byte[blocksize];
+	int bytesRead = in.read(buf);
+	System.out.println("bytesRead:"+bytesRead);
+	//add by kangyucheng end
+	
     while (bytesRead >= 0) {
+    	
+    	// add by kangyucheng start
+    	//System.out.println("bytesRead "+bytesRead);
+    	for(int i=0;i<buffSize;i++,count++){
+    		oneBlock[count]=buf[i];
+    	}
+    	
+    	// add by kangyucheng start
+  
+    	if (count>=blocksize-1){
+    		count =0;
+    		System.out.println("count= "+count+"block is full,we shold write it into file");
+    		//1. delete that in hdfs
+    		System.out.println("1. delete that in hdfs");
+    		//2.select an block at random that exit in local
+    		System.out.println("2.select an block at random that exit in local");
+    		//3. write to hdfs
+    		System.out.println("3. write to hdfs");
+    	}
+    	
       out.write(buf, 0, bytesRead);
+      
+//      System.out.println(" in IOUtils  copyBytes # write()");
       if ((ps != null) && ps.checkError()) {
         throw new IOException("Unable to write to output stream.");
       }
       bytesRead = in.read(buf);
+      
+      
+      
+      
     }
+    System.out.println("*********** in second copyBytes()  #end  ");
   }
 
   /**
@@ -107,8 +152,10 @@ public class IOUtils {
    */
   public static void copyBytes(InputStream in, OutputStream out, Configuration conf)
     throws IOException {
+	  System.out.println("*********** in 2second copyBytes()  #start ");
     copyBytes(in, out, conf.getInt(
         IO_FILE_BUFFER_SIZE_KEY, IO_FILE_BUFFER_SIZE_DEFAULT), true);
+    System.out.println("*********** in 2second copyBytes()  #  end ");
   }
   
   /**
@@ -122,8 +169,10 @@ public class IOUtils {
    */
   public static void copyBytes(InputStream in, OutputStream out, Configuration conf, boolean close)
     throws IOException {
+	  System.out.println("*********** in third copyBytes()  #start  ");
     copyBytes(in, out, conf.getInt(
         IO_FILE_BUFFER_SIZE_KEY, IO_FILE_BUFFER_SIZE_DEFAULT),  close);
+    System.out.println("*********** in third copyBytes()  # end ");
   }
 
   /**
@@ -137,16 +186,20 @@ public class IOUtils {
    */
   public static void copyBytes(InputStream in, OutputStream out, long count,
       boolean close) throws IOException {
+	  
+	  System.out.println("*********** in last copyBytes()# try  #start  ");
     byte buf[] = new byte[4096];
     long bytesRemaining = count;
     int bytesRead;
 
     try {
       while (bytesRemaining > 0) {
+    	  System.out.println("bytesRemaining"+bytesRemaining);
         int bytesToRead = (int)
           (bytesRemaining < buf.length ? bytesRemaining : buf.length);
 
         bytesRead = in.read(buf, 0, bytesToRead);
+        System.out.println("bytesRead"+bytesRead);
         if (bytesRead == -1)
           break;
 
@@ -165,6 +218,7 @@ public class IOUtils {
         closeStream(in);
       }
     }
+    System.out.println("*********** in last copyBytes()# try  #end  ");
   }
   
   /**

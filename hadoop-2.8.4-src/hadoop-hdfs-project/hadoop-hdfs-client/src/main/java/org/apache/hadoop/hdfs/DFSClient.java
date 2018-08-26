@@ -296,6 +296,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
   @VisibleForTesting
   public DFSClient(URI nameNodeUri, ClientProtocol rpcNamenode,
       Configuration conf, FileSystem.Statistics stats) throws IOException {
+	 System.out.println("*******DFSClient() is constracting # start");
     // Copy only the required DFSClient configuration
     this.tracer = FsTracer.get(conf);
     this.dfsClientConf = new DfsClientConf(conf);
@@ -336,7 +337,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
           nameNodeUri, ClientProtocol.class, numResponseToDrop,
           nnFallbackToSimpleAuth);
     }
-
+ 
     if (proxyInfo != null) {
       this.dtService = proxyInfo.getDelegationTokenService();
       this.namenode = proxyInfo.getProxy();
@@ -388,6 +389,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
     this.saslClient = new SaslDataTransferClient(
         conf, DataTransferSaslUtil.getSaslPropertiesResolver(conf),
         TrustedChannelResolver.getInstance(conf), nnFallbackToSimpleAuth);
+    System.out.println("*******DFSClient() is constracting # end  --kyc");
   }
 
   /**
@@ -642,12 +644,15 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
    * @see ClientProtocol#getPreferredBlockSize(String)
    */
   public long getBlockSize(String f) throws IOException {
+	  System.out.println("DFSClient #getBlockSize() ");
     try (TraceScope ignored = newPathTraceScope("getBlockSize", f)) {
+
       return namenode.getPreferredBlockSize(f);
     } catch (IOException ie) {
       LOG.warn("Problem getting block size", ie);
       throw ie;
     }
+    
   }
 
   /**
@@ -822,6 +827,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
 
   public LocatedBlocks getLocatedBlocks(String src, long start)
       throws IOException {
+	  System.out.println("DFSClient #getLocatedBlocks() # start");
     return getLocatedBlocks(src, start, dfsClientConf.getPrefetchSize());
   }
 
@@ -833,6 +839,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
   public LocatedBlocks getLocatedBlocks(String src, long start, long length)
       throws IOException {
     try (TraceScope ignored = newPathTraceScope("getBlockLocations", src)) {
+    	System.out.println("DFSClient second #getLocatedBlocks() # start");
       return callGetBlockLocations(namenode, src, start, length);
     }
   }
@@ -843,6 +850,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
   static LocatedBlocks callGetBlockLocations(ClientProtocol namenode,
       String src, long start, long length)
       throws IOException {
+	  System.out.println("DFSClient  #callGetBlockLocations() ");
     try {
       return namenode.getBlockLocations(src, start, length);
     } catch(RemoteException re) {
@@ -850,6 +858,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
           FileNotFoundException.class,
           UnresolvedPathException.class);
     }
+   
   }
 
   /**
@@ -884,13 +893,17 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
    */
   public BlockLocation[] getBlockLocations(String src, long start,
       long length) throws IOException {
+	  
     try (TraceScope ignored = newPathTraceScope("getBlockLocations", src)) {
+    	System.out.println("DFSClient  #getBlockLocations() # start");
       LocatedBlocks blocks = getLocatedBlocks(src, start, length);
+      System.out.println("DFSClient  #getBlockLocations() block:"+blocks);
       BlockLocation[] locations = DFSUtilClient.locatedBlocks2Locations(blocks);
       HdfsBlockLocation[] hdfsLocations =
           new HdfsBlockLocation[locations.length];
       for (int i = 0; i < locations.length; i++) {
         hdfsLocations[i] = new HdfsBlockLocation(locations[i], blocks.get(i));
+        System.out.println("DFSClient  #getBlockLocations() hdfsLocations[i]:"+hdfsLocations[i]);
       }
       return hdfsLocations;
     }
@@ -916,6 +929,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
   public BlockStorageLocation[] getBlockStorageLocations(
       List<BlockLocation> blockLocations) throws IOException,
       UnsupportedOperationException, InvalidBlockTokenException {
+	  
     if (!getConf().isHdfsBlocksMetadataEnabled()) {
       throw new UnsupportedOperationException("Datanode-side support for " +
           "getVolumeBlockLocations() must also be enabled in the client " +
@@ -1033,6 +1047,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
   }
 
   public DFSInputStream open(String src) throws IOException {
+	  System.out.println("DFSClient  first #open() ");
     return open(src, dfsClientConf.getIoBufferSize(), true);
   }
 
@@ -1046,6 +1061,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
   @Deprecated
   public DFSInputStream open(String src, int buffersize, boolean verifyChecksum,
       FileSystem.Statistics stats) throws IOException {
+	  System.out.println("DFSClient  second #open() ");
     return open(src, buffersize, verifyChecksum);
   }
 
@@ -1061,6 +1077,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
     checkOpen();
     //    Get block info from namenode
     try (TraceScope ignored = newPathTraceScope("newDFSInputStream", src)) {
+    	System.out.println("DFSClient third  #open() ");
       return new DFSInputStream(this, src, verifyChecksum, null);
     }
   }
@@ -1080,6 +1097,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
    */
   public OutputStream create(String src, boolean overwrite)
       throws IOException {
+	  System.out.println("DFSClient first   #create() ");
     return create(src, overwrite, dfsClientConf.getDefaultReplication(),
         dfsClientConf.getDefaultBlockSize(), null);
   }
@@ -1090,6 +1108,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
    */
   public OutputStream create(String src,
       boolean overwrite, Progressable progress) throws IOException {
+	  System.out.println("DFSClient  second #create() ");
     return create(src, overwrite, dfsClientConf.getDefaultReplication(),
         dfsClientConf.getDefaultBlockSize(), progress);
   }
@@ -1100,6 +1119,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
    */
   public OutputStream create(String src, boolean overwrite, short replication,
       long blockSize) throws IOException {
+	  System.out.println("DFSClient  third #create() ");
     return create(src, overwrite, replication, blockSize, null);
   }
 
@@ -1109,6 +1129,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
    */
   public OutputStream create(String src, boolean overwrite, short replication,
       long blockSize, Progressable progress) throws IOException {
+	  System.out.println("DFSClient 4  #create() ");
     return create(src, overwrite, replication, blockSize, progress,
         dfsClientConf.getIoBufferSize());
   }
@@ -1130,6 +1151,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
   public OutputStream create(String src, boolean overwrite, short replication,
       long blockSize, Progressable progress, int buffersize)
       throws IOException {
+	  System.out.println("DFSClient 5  #create() ");
     return create(src, FsPermission.getFileDefault(),
         overwrite ? EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE)
             : EnumSet.of(CreateFlag.CREATE), replication, blockSize, progress,
@@ -1145,6 +1167,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
       EnumSet<CreateFlag> flag, short replication, long blockSize,
       Progressable progress, int buffersize, ChecksumOpt checksumOpt)
       throws IOException {
+	  System.out.println("DFSClient  6 #create() ");
     return create(src, permission, flag, true,
         replication, blockSize, progress, buffersize, checksumOpt, null);
   }
@@ -1175,6 +1198,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
       EnumSet<CreateFlag> flag, boolean createParent, short replication,
       long blockSize, Progressable progress, int buffersize,
       ChecksumOpt checksumOpt) throws IOException {
+	  System.out.println("DFSClient 7 #create() ");
     return create(src, permission, flag, createParent, replication, blockSize,
         progress, buffersize, checksumOpt, null);
   }
@@ -1200,6 +1224,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
       long blockSize, Progressable progress, int buffersize,
       ChecksumOpt checksumOpt, InetSocketAddress[] favoredNodes)
       throws IOException {
+	  System.out.println("DFSClient  finally #create() ");
     checkOpen();
     final FsPermission masked = applyUMask(permission);
     LOG.debug("{}: masked={}", src, masked);
@@ -1741,6 +1766,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
     //get block locations for the file range
     LocatedBlocks blockLocations = callGetBlockLocations(namenode, src, 0,
         length);
+    System.out.println("in DFSClient# getFileChecksum()  #blockLocations:"+blockLocations);
     if (null == blockLocations) {
       throw new FileNotFoundException("File does not exist: " + src);
     }
@@ -1772,6 +1798,7 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
               + " is under construction.");
         }
         locatedblocks = blockLocations.getLocatedBlocks();
+        System.out.println("locatedblocks:"+locatedblocks);
         refetchBlocks = false;
       }
       LocatedBlock lb = locatedblocks.get(i);

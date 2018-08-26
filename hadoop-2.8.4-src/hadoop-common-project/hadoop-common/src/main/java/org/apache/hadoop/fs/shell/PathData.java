@@ -55,6 +55,7 @@ public class PathData implements Comparable<PathData> {
   public FileStatus stat;
   public boolean exists;
 
+  
   /* True if the URI scheme was not present in the pathString but inferred.
    */
   private boolean inferredSchemeFromPath = false;
@@ -155,6 +156,7 @@ public class PathData implements Comparable<PathData> {
     if (Path.WINDOWS) {
       inferredSchemeFromPath = checkIfSchemeInferredFromPath(pathString);
     }
+    System.out.println("in PathData(),fs"+fs+"is constructed");
   }
 
   // need a static method for the ctor above

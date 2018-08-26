@@ -71,7 +71,7 @@ import com.google.common.io.Files;
  *
  * This class is synchronized by {@link FsVolumeImpl}.
  */
-class BlockPoolSlice {
+public class BlockPoolSlice {
   static final Log LOG = LogFactory.getLog(BlockPoolSlice.class);
 
   private final String bpid;
@@ -188,7 +188,7 @@ class BlockPoolSlice {
     return rbwDir;
   }
 
-  File getTmpDir() {
+  public File getTmpDir() {
     return tmpDir;
   }
 

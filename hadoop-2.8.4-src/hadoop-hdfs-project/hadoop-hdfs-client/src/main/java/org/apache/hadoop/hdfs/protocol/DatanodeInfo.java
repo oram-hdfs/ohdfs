@@ -16,16 +16,18 @@
  * limitations under the License.
  */
 package org.apache.hadoop.hdfs.protocol;
-
+import org.apache.hadoop.hdfs.server.*;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.hdfs.DFSUtilClient;
+
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.net.NetworkTopology;
 import org.apache.hadoop.net.Node;
 import org.apache.hadoop.net.NodeBase;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.Time;
+
 
 import java.util.Date;
 import java.util.LinkedList;
@@ -55,6 +57,9 @@ public class DatanodeInfo extends DatanodeID implements Node {
   private String softwareVersion;
   private List<String> dependentHostNames = new LinkedList<>();
   private String upgradeDomain;
+  //��Ӹ�Ҷ�ڵ�
+
+
 
   // Datanode administrative states
   public enum AdminStates {

@@ -134,8 +134,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * has a unique name and an extent on disk.
  *
  ***************************************************/
-@InterfaceAudience.Private
-class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
+@InterfaceAudience.Public
+public class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
   static final Log LOG = LogFactory.getLog(FsDatasetImpl.class);
   private final static boolean isNativeIOAvailable;
   static {
@@ -279,7 +279,7 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
   /**
    * An FSDataset has a directory where it loads its data files.
    */
-  FsDatasetImpl(DataNode datanode, DataStorage storage, Configuration conf
+  public FsDatasetImpl(DataNode datanode, DataStorage storage, Configuration conf
       ) throws IOException {
     this.fsRunning = true;
     this.datanode = datanode;
@@ -805,7 +805,7 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
    * @throws ReplicaNotFoundException if no entry is in the map or 
    *                        there is a generation stamp mismatch
    */
-  ReplicaInfo getReplicaInfo(ExtendedBlock b)
+  public ReplicaInfo getReplicaInfo(ExtendedBlock b)
       throws ReplicaNotFoundException {
     ReplicaInfo info = volumeMap.get(b.getBlockPoolId(), b.getLocalBlock());
     if (info == null) {
@@ -830,7 +830,7 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
    * @throws ReplicaNotFoundException if no entry is in the map or 
    *                        there is a generation stamp mismatch
    */
-  private ReplicaInfo getReplicaInfo(String bpid, long blkid)
+  public ReplicaInfo getReplicaInfo(String bpid, long blkid)
       throws ReplicaNotFoundException {
     ReplicaInfo info = volumeMap.get(bpid, blkid);
     if (info == null) {
@@ -921,7 +921,7 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
    * @return the new meta and block files.
    * @throws IOException
    */
-  static File[] copyBlockFiles(long blockId, long genStamp, File srcMeta,
+  public static File[] copyBlockFiles(long blockId, long genStamp, File srcMeta,
       File srcFile, File destRoot, boolean calculateChecksum,
       int smallBufferSize, final Configuration conf) throws IOException {
     final File destDir = DatanodeUtil.idToBlockDir(destRoot, blockId);
@@ -929,6 +929,15 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
     final File dstMeta = FsDatasetUtil.getMetaFile(dstFile, genStamp);
     return copyBlockFiles(srcMeta, srcFile, dstMeta, dstFile, calculateChecksum,
         smallBufferSize, conf);
+  }
+  public static File[] oramCopyBlockFiles(long blockId, long genStamp, File srcMeta,
+                                      File srcFile, File destRoot, boolean calculateChecksum,
+                                      int smallBufferSize, final Configuration conf,int offset) throws IOException {
+    final File destDir = DatanodeUtil.idToBlockDir(destRoot, blockId+offset);
+    final File dstFile = new File(destDir, srcFile.getName());
+    final File dstMeta = FsDatasetUtil.getMetaFile(dstFile, genStamp);
+    return copyBlockFiles(srcMeta, srcFile, dstMeta, dstFile, calculateChecksum,
+            smallBufferSize, conf);
   }
 
   static File[] copyBlockFiles(File srcMeta, File srcFile, File dstMeta,

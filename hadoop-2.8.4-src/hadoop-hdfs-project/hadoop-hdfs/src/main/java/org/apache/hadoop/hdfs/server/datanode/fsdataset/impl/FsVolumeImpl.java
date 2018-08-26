@@ -441,7 +441,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
     return reserved;
   }
 
-  BlockPoolSlice getBlockPoolSlice(String bpid) throws IOException {
+  public BlockPoolSlice getBlockPoolSlice(String bpid) throws IOException {
     BlockPoolSlice bp = bpSlices.get(bpid);
     if (bp == null) {
       throw new IOException("block pool " + bpid + " is not found");

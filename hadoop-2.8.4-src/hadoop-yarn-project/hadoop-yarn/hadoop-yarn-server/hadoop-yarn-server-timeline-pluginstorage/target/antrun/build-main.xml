@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="maven-antrun-" default="main"  >
+<target name="main">
+  <mkdir dir="J:\hadoop\hadoop-2.8.4-src\hadoop-yarn-project\hadoop-yarn\hadoop-yarn-server\hadoop-yarn-server-timeline-pluginstorage\target/test-dir"/>
+  <mkdir dir="J:\hadoop\hadoop-2.8.4-src\hadoop-yarn-project\hadoop-yarn\hadoop-yarn-server\hadoop-yarn-server-timeline-pluginstorage\target/test-dir"/>
+</target>
+</project>

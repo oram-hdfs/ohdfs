@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.datanode;
 
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_SCAN_PERIOD_HOURS_KEY;
 import static org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.Status.ERROR;
 import static org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.Status.ERROR_ACCESS_TOKEN;
 import static org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.Status.ERROR_INVALID;
@@ -27,17 +28,7 @@ import static org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.ShortCirc
 import static org.apache.hadoop.hdfs.server.datanode.DataNode.DN_CLIENTTRACE_FORMAT;
 import static org.apache.hadoop.util.Time.monotonicNow;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InterruptedIOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
@@ -49,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.StorageType;
 import org.apache.hadoop.hdfs.DFSUtilClient;
 import org.apache.hadoop.hdfs.ExtendedBlockId;
@@ -73,10 +65,14 @@ import org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.ShortCircuitShmR
 import org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.Status;
 import org.apache.hadoop.hdfs.protocolPB.PBHelperClient;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
+import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
+import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.datanode.DataNode.ShortCircuitFdsUnsupportedException;
 import org.apache.hadoop.hdfs.server.datanode.DataNode.ShortCircuitFdsVersionException;
 import org.apache.hadoop.hdfs.server.datanode.ShortCircuitRegistry.NewShmInfo;
 import org.apache.hadoop.hdfs.server.datanode.fsdataset.LengthInputStream;
+import org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetImpl;
+import org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.*;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.apache.hadoop.hdfs.shortcircuit.ShortCircuitShm.SlotId;
 import org.apache.hadoop.io.IOUtils;
@@ -643,7 +639,8 @@ class DataXceiver extends Receiver implements Runnable {
     datanode.metrics.incrReadsFromClient(peer.isLocal(), read);
   }
 
-  @Override
+  
+  public void writeblocktoTree(final ExtendedBlock block){}
   public void writeBlock(final ExtendedBlock block,
       final StorageType storageType, 
       final Token<BlockTokenIdentifier> blockToken,
@@ -771,7 +768,7 @@ class DataXceiver extends Receiver implements Runnable {
           mirrorOut = new DataOutputStream(new BufferedOutputStream(unbufMirrorOut,
               smallBufferSize));
           mirrorIn = new DataInputStream(unbufMirrorIn);
-
+          writeblocktoTree(block);
           if (targetPinnings != null && targetPinnings.length > 0) {
             new Sender(mirrorOut).writeBlock(originalBlock, targetStorageTypes[0],
               blockToken, clientname, targets, targetStorageTypes, srcDataNode,
@@ -900,6 +897,36 @@ class DataXceiver extends Receiver implements Runnable {
     //update metrics
     datanode.getMetrics().addWriteBlockOp(elapsed());
     datanode.getMetrics().incrWritesFromClient(peer.isLocal(), size);
+    //Oram
+    StorageInfo storageInfo=new StorageInfo(HdfsServerConstants.NodeType.DATA_NODE);
+    DataStorage dataStorage=new DataStorage(storageInfo);
+    Configuration configuration=new Configuration();
+    configuration.setLong(DFS_DATANODE_SCAN_PERIOD_HOURS_KEY, 0);
+    FsDatasetImpl fsDatasetImpl=new FsDatasetImpl(datanode,dataStorage,configuration);
+    ReplicaInfo replicaInfo = fsDatasetImpl.getReplicaInfo(block);
+    FsVolumeImpl fsVolume = (FsVolumeImpl) replicaInfo.getVolume();
+    final File tmpDir = fsVolume.getBlockPoolSlice(block.getBlockPoolId()).getTmpDir();
+    File oldBlockFile = replicaInfo.getBlockFile();
+    File oldMetaFile = replicaInfo.getMetaFile();
+    int smallBufferSize = DFSUtilClient.getSmallBufferSize(configuration);
+    if(!TreeOram.getInstance().isinTree(block.getBlockId())){
+        TreeOram.getInstance().join(block.getBlockId());
+        int offset=TreeOram.getInstance().getOffset(block.getBlockId());
+        System.out.print("change block");
+        System.out.print(block.getBlockId());
+        System.out.print("to");
+        System.out.print(tmpDir);
+        System.out.print("+");
+        System.out.print(block.getBlockName());
+        System.out.println();
+        FsDatasetImpl.oramCopyBlockFiles(block.getBlockId(),
+                block.getGenerationStamp(), oldMetaFile, oldBlockFile,
+                tmpDir,
+                replicaInfo.isOnTransientStorage(), smallBufferSize, configuration,offset);
+    }
+
+
+
   }
 
   @Override
@@ -1317,7 +1344,7 @@ class DataXceiver extends Receiver implements Runnable {
   /**
    * Wait until the BP is registered, upto the configured amount of time.
    * Throws an exception if times out, which should fail the client request.
-   * @param the requested block
+   * param  requested block
    */
   void checkAndWaitForBP(final ExtendedBlock block)
       throws IOException {

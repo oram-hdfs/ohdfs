@@ -25,6 +25,7 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
+import org.apache.hadoop.hdfs.server.datanode.TreeOram.TreeNode;
 import org.apache.hadoop.util.LightWeightGSet;
 
 import static org.apache.hadoop.hdfs.server.namenode.INodeId.INVALID_INODE_ID;
@@ -69,6 +70,7 @@ public abstract class BlockInfo extends Block
    * bytes using the triplets.
    */
   protected Object[] triplets;
+  //添加保存的根叶节点
 
   private BlockUnderConstructionFeature uc;
 

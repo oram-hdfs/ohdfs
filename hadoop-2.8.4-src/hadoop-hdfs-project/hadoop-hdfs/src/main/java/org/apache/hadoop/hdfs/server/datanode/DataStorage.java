@@ -213,7 +213,7 @@ public class DataStorage extends Storage {
 
   /**
    * VolumeBuilder holds the metadata (e.g., the storage directories) of the
-   * prepared volume returned from {@link prepareVolume()}. Calling {@link build()}
+   * prepared volume returned from {@link()}. Calling {@link ()}
    * to add the metadata to {@link DataStorage} so that this prepared volume can
    * be active.
    */
@@ -1376,7 +1376,7 @@ public class DataStorage extends Storage {
   }
 
   /**
-   * Get the BlockPoolSliceStorage from {@link bpStorageMap}.
+   * Get the BlockPoolSliceStorage from {@link }.
    * If the object is not found, create a new object and put it to the map.
    */
   synchronized BlockPoolSliceStorage getBlockPoolSliceStorage(

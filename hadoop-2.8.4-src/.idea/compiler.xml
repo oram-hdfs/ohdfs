@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="hadoop-annotations" />
+        <module name="hadoop-ant" />
+        <module name="hadoop-archive-logs" />
+        <module name="hadoop-archives" />
+        <module name="hadoop-assemblies" />
+        <module name="hadoop-auth" />
+        <module name="hadoop-auth-examples" />
+        <module name="hadoop-aws" />
+        <module name="hadoop-azure" />
+        <module name="hadoop-azure-datalake" />
+        <module name="hadoop-build-tools" />
+        <module name="hadoop-client" />
+        <module name="hadoop-common" />
+        <module name="hadoop-datajoin" />
+        <module name="hadoop-dist" />
+        <module name="hadoop-distcp" />
+        <module name="hadoop-extras" />
+        <module name="hadoop-gridmix" />
+        <module name="hadoop-hdfs" />
+        <module name="hadoop-hdfs-bkjournal" />
+        <module name="hadoop-hdfs-client" />
+        <module name="hadoop-hdfs-httpfs" />
+        <module name="hadoop-hdfs-native-client" />
+        <module name="hadoop-hdfs-nfs" />
+        <module name="hadoop-kms" />
+        <module name="hadoop-mapreduce-client-app" />
+        <module name="hadoop-mapreduce-client-common" />
+        <module name="hadoop-mapreduce-client-core" />
+        <module name="hadoop-mapreduce-client-hs" />
+        <module name="hadoop-mapreduce-client-hs-plugins" />
+        <module name="hadoop-mapreduce-client-jobclient" />
+        <module name="hadoop-mapreduce-client-shuffle" />
+        <module name="hadoop-mapreduce-examples" />
+        <module name="hadoop-maven-plugins" />
+        <module name="hadoop-minicluster" />
+        <module name="hadoop-minikdc" />
+        <module name="hadoop-nfs" />
+        <module name="hadoop-openstack" />
+        <module name="hadoop-rumen" />
+        <module name="hadoop-sls" />
+        <module name="hadoop-streaming" />
+        <module name="hadoop-tools-dist" />
+        <module name="hadoop-yarn-api" />
+        <module name="hadoop-yarn-applications-distributedshell" />
+        <module name="hadoop-yarn-applications-unmanaged-am-launcher" />
+        <module name="hadoop-yarn-client" />
+        <module name="hadoop-yarn-common" />
+        <module name="hadoop-yarn-registry" />
+        <module name="hadoop-yarn-server-applicationhistoryservice" />
+        <module name="hadoop-yarn-server-common" />
+        <module name="hadoop-yarn-server-nodemanager" />
+        <module name="hadoop-yarn-server-resourcemanager" />
+        <module name="hadoop-yarn-server-sharedcachemanager" />
+        <module name="hadoop-yarn-server-tests" />
+        <module name="hadoop-yarn-server-timeline-pluginstorage" />
+        <module name="hadoop-yarn-server-web-proxy" />
+      </profile>
+    </annotationProcessing>
+  </component>
+</project>

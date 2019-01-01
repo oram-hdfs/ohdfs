@@ -658,6 +658,7 @@ class DataXceiver extends Receiver implements Runnable {
       boolean allowLazyPersist,
       final boolean pinning,
       final boolean[] targetPinnings) throws IOException {
+    System.out.print("WriteBlock!!!!!!!!!!!");
     previousOpClientName = clientname;
     updateCurrentThreadName("Receiving block " + block);
     final boolean isDatanode = clientname.length() == 0;
@@ -909,7 +910,7 @@ class DataXceiver extends Receiver implements Runnable {
     File oldBlockFile = replicaInfo.getBlockFile();
     File oldMetaFile = replicaInfo.getMetaFile();
     int smallBufferSize = DFSUtilClient.getSmallBufferSize(configuration);
-    if(!TreeOram.getInstance().isinTree(block.getBlockId())){
+   //if(!TreeOram.getInstance().isinTree(block.getBlockId())){
         TreeOram.getInstance().join(block.getBlockId());
         int offset=TreeOram.getInstance().getOffset(block.getBlockId());
         System.out.print("change block");
@@ -923,7 +924,7 @@ class DataXceiver extends Receiver implements Runnable {
                 block.getGenerationStamp(), oldMetaFile, oldBlockFile,
                 tmpDir,
                 replicaInfo.isOnTransientStorage(), smallBufferSize, configuration,offset);
-    }
+  // }
 
 
 
